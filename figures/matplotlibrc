@@ -1,0 +1,49 @@
+# Copyright (c) 2019, Julien Seguinot <seguinot@vaw.baug.ethz.ch>
+# Creative Commons Attribution-ShareAlike 4.0 International License
+# (CC BY-SA 4.0, http://creativecommons.org/licenses/by-sa/4.0/)
+
+# Bowdoin figures matplotlib configuration
+# ----------------------------------------
+
+# Defaults are relative to mpl 2.0.0
+
+### LINES
+lines.linewidth         : 1.0     # line width in points (default 1.5)
+lines.color             : 0.25    # also see prop_cycle (default C0)
+lines.markersize        : 4       # markersize, in points (default 6)
+
+### PATCHES
+patch.linewidth         : 0.8     # poly width incl. cartopy axes (default 1.0)
+patch.facecolor         : 0.75    # polygons face color (default C0)
+
+### FONT
+font.size               : 8.0     # default font size in points (default 10.0)
+mathtext.default        : regular # font to use for math (default it)
+
+### AXES
+axes.linewidth          : 0.8     # edge linewidth (default 0.8)
+axes.grid               : True    # display grid or not (default False)
+axes.titlesize          : medium  # fontsize of the axes title (default large)
+axes.titlepad           : 4.0     # space between axes and title (default 6.0)
+axes.labelsize          : medium  # fontsize of x and y labels (default medium)
+axes.labelpad           : 4.0     # space between label and axis (default 4.0)
+axes.formatter.limits   : -4, 4   # sci. not. outside range (default -7, 7)
+axes.formatter.use_mathtext : True    # mathtext for sci. not. (default False)
+axes.formatter.useoffset    : False   # tick relative to an offset (def. True)
+
+### GRIDS
+grid.color              : 0.75    # grid color (default b0b0b0)
+grid.linestyle          : :       # grid style (default -)
+grid.linewidth          : 0.5     # grid width in points (default 0.8)
+
+### LEGEND
+legend.framealpha       : 0.75    # legend patch transparency (default 0.8)
+legend.edgecolor        : 0.75    # legend patch boundary color (default 0.8)
+
+### FIGURE
+figure.dpi              : 254     # figure dots per inch (default 100)
+figure.max_open_warning : 1       # max open figs before warning (default 20)
+
+### SAVING
+savefig.dpi             : figure  # saved figure dots per inch (default figure)
+savefig.format          : pdf     # png, ps, pdf, svg (default png)
