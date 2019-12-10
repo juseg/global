@@ -15,6 +15,17 @@ import absplots as apl
 import util
 
 
+def draw_shapefile(filename, ax=None, crs=None, **kwargs):
+    """Add shapefile geometries without duplicates."""
+    ax = ax or plt.gca()
+    crs = crs or ccrs.PlateCarree()
+    shp = cshp.Reader(filename)
+    geometries = []
+    [geometries.append(g) for g in shp.geometries() if g not in geometries]
+    ax.add_geometries(geometries, crs, **kwargs)
+    shp = None
+
+
 def main():
     """Main program called during execution."""
 
@@ -34,6 +45,10 @@ def main():
     cne.add_coastline(ax=ax, edgecolor='0.25', scale='50m')
     cne.add_glaciers(ax=ax, edgecolor='0.25', facecolor='0.25', scale='50m')
     cne.add_graticules(ax=ax, interval=5, scale='50m')
+
+    # add glaciers
+    draw_shapefile('../data/external/lgm_simple.shp',
+                   ax=ax, alpha=1.0, facecolor='C0')
 
     # save
     util.savefig(fig)
