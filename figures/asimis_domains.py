@@ -67,12 +67,6 @@ def draw_shapefile(filename, ax=None, crs=None, **kwargs):
     shp = None
 
 
-def add_legend(ax, colors, labels, alpha=0.75, **kwargs):
-    """Add a standalone legend."""
-    artists = [mpl.patches.Patch(color=c, alpha=alpha) for c in colors]
-    ax.legend(artists, labels, **kwargs)
-
-
 def main():
     """Main program called during execution."""
 
@@ -80,12 +74,12 @@ def main():
     fig = apl.figure_mm(figsize=(180, 120))
     ax = fig.add_axes([0, 0, 1, 1], projection=ccrs.LambertAzimuthalEqualArea(
         central_longitude=135, central_latitude=60))
-    ax.set_extent([-6e6, 6e6, -4e6, 4e6], crs=ax.projection)
+    ax.set_extent([-3.6e6, 3.6e6, -1.6e6, 3.2e6], crs=ax.projection)
     ax.set_rasterization_zorder(2.5)
 
     # add etopo1bed background
     csr.add_topography('../data/external/ETOPO1_Bed_c_geotiff_asia.tif',
-                       ax=ax, cmap='Greys', vmax=6000)
+                       ax=ax, cmap='Greys', vmax=4500)
 
     # add physical elements
     cne.add_rivers(ax=ax, edgecolor='0.25', scale='50m')
@@ -95,20 +89,20 @@ def main():
     cne.add_graticules(ax=ax, interval=5, scale='50m')
 
     # add glaciers and domains
-    draw_shapefile('../data/external/lgm_simple.shp',
-                   ax=ax, alpha=0.75, facecolor='C0')
     draw_shapefile('../data/external/MIS4_best_estimate.shp',
                    ax=ax, alpha=0.75, facecolor='C1',
                    crs=ccrs.LambertAzimuthalEqualArea(central_latitude=90))
     draw_shapefile('../data/external/LGM_best_estimate.shp',
-                   ax=ax, alpha=0.75, facecolor='C2')
+                   ax=ax, alpha=0.75, facecolor='C0')
     draw_model_domains(ax=ax, domains=DOMAINS, color='C3', zorder=3)
 
     # add legend
-    add_legend(
-        ax=ax, alpha=0.75, colors=['C2', 'C1', 'C0', '0.75'],
-        labels=['Batchelor et al., 2019, LGM', 'Batchelor et al., 2019, MIS4',
-                'Ehlers et al., 2011', 'Modern glaciers'], loc='lower right')
+    ax.legend([mpl.patches.Patch(facecolor='C1', alpha=0.75),
+               mpl.patches.Patch(facecolor='C0', alpha=0.75),
+               mpl.patches.Patch(facecolor='none', edgecolor='C3')],
+              ['MIS 2 (Batchelor et al., 2019)',
+               'MIS 4 (Batchelor et al., 2019)',
+               'Planned model domains'], loc='lower right')
 
     # save
     util.savefig(fig)
