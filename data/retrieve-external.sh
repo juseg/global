@@ -24,6 +24,24 @@ gdalwarp -s_srs "+ellps=WGS84 +proj=lonlat" \
          -te -6000000 -4000000 6000000 4000000 -tr 5000 5000 \
          -wm 1024 -wo SOURCE_EXTRA=500 ${file}{,_asia}.tif
 
+# SRTM land topography data  # FIXME use pismx pseudo-boot file
+wdir="http://srtm.csi.cgiar.org/SRT-ZIP/SRTM_V41/SRTM_Data_GeoTiff"
+wdir="http://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/tiff" #srtm_65_04.zip
+#http://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/tiff/srtm_65_04.zip
+for tile in srtm_{64_05,65_04}
+do
+    wget -nc $wdir/$tile.zip
+    unzip -n $tile.zip $tile.{hdr,tfw,tif}
+done
+gdalwarp $args -r cubic -s_srs "+proj=longlat" \
+         -t_srs '+proj=laea +lon_0=138 +lat_0=36' \
+         -te -75000 -100000 75000 100000 -tr 1000 1000 \
+         srtm_64_05.tif srtm_chubu.tif
+gdalwarp $args -r cubic -s_srs "+proj=longlat" \
+         -t_srs '+proj=laea +lon_0=143 +lat_0=43' \
+         -te -75000 -100000 75000 100000 -tr 1000 1000 \
+         srtm_65_04.tif srtm_hokkaido.tif
+
 # Ehlers et al. (2011) simplified LGM outline
 wdir="http://static.us.elsevierhealth.com/ehlers_digital_maps/"
 file="digital_maps_02_all_other_files.zip"
