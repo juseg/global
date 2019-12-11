@@ -7,9 +7,7 @@
 
 
 import matplotlib as mpl
-import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
-import cartopy.io.shapereader as cshp
 import cartowik.naturalearth as cne
 import cartowik.shadedrelief as csr
 import absplots as apl
@@ -33,25 +31,6 @@ DOMAINS = {
     'Chukotka':      (177, 68, [-100e3, 100e3, -100e3, 100e3]),
     'Brooks':       (-152, 68, [-100e3, 100e3, -100e3, 100e3]),
     'Ahklun':       (-161, 59, [-100e3, 100e3, -100e3, 100e3])}
-
-
-def draw_model_domain(ax, extent, **kwargs):
-    """Draw model domain with projection axes."""
-    west, east, south, north = extent
-    ax.plot([west, east, east, west, west],
-            [south, south, north, north, south], **kwargs)
-    ax.plot([0, 0], [south, north], lw=0.5, **kwargs)
-    ax.plot([west, east], [0, 0], lw=0.5, **kwargs)
-    ax.plot(0, 0, marker='o', **kwargs)
-
-
-def draw_model_domains(ax, domains, **kwargs):
-    """Draw multiple model domains."""
-    for name, (lon, lat, extent) in domains.items():
-        proj = ccrs.LambertAzimuthalEqualArea(
-            central_longitude=lon, central_latitude=lat)
-        draw_model_domain(ax, extent, transform=proj, **kwargs)
-        ax.text(0, 0, name, fontsize=4, transform=proj)
 
 
 def main():
@@ -80,7 +59,7 @@ def main():
                       crs=ccrs.LambertAzimuthalEqualArea(central_latitude=90))
     cne.add_shapefile('../data/external/LGM_best_estimate.shp',
                       ax=ax, alpha=0.75, facecolor='C0')
-    draw_model_domains(ax=ax, domains=DOMAINS, color='C3', zorder=3)
+    util.draw_model_domains(ax=ax, domains=DOMAINS, color='C3', zorder=3)
 
     # add legend
     ax.legend([mpl.patches.Patch(facecolor='C1', alpha=0.75),
