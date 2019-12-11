@@ -40,11 +40,33 @@ Modelling MIS4 glaciations in North Asia and Japan
 .. (follow plan below, 2 pages)
 
 **a. Background of proposed research plan**
+
+* Typically older glaciations evidence is overriden by the LGM
+* The exception is east asia and alaska where MIS 4 > MIS 2
+* Their glacial dynamics are understudied
+
 **b. Purpose of proposed research**
+
+* Fill the gap of knowledge of past glacier dyn in East vs West Arctic
+* East Asia ice volume contribution to pre-LGM sea level drops
+
 **c. Proposed plan**
+
+* Apply for computing resources (CH/JP)
+* Setup PISM for multiple domains in east Asia
+
 **d. Expected results and impacts**
+
+* A database of modelled glacier states
+* An estimate of ice volume in ne asia through mis stages
+* A framework for multidomain paleoglacier modelling
+
 
 19. Your Academic Goals and Career Prospects after the Fellowship
 -----------------------------------------------------------------
 
 .. (ca. one third of a page)
+
+* Spark interest of Japanese students
+* Extend to asia, panarctic and global
+* PMIP output
