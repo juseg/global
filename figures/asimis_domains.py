@@ -3,7 +3,7 @@
 # Creative Commons Attribution-ShareAlike 4.0 International License
 # (CC BY-SA 4.0, http://creativecommons.org/licenses/by-sa/4.0/)
 
-"""Plot Arctic Asia glaciations map."""
+"""Plot Asia mountain ice sheet glaciations map."""
 
 
 import matplotlib as mpl

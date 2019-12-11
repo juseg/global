@@ -5,3 +5,12 @@
 
 Asian glaciations
 =================
+
+Paper ideas
+-----------
+
+ASIMIS: asia-mis
+    Modelling North Asian mountain ice sheet glaciations
+
+ASIJAP: asia-japan
+    Modelling Japanese mountain paleo-glaciers
