@@ -35,3 +35,13 @@ then
     ogr2ogr -where "OGR_GEOM_AREA > 1e-3" -simplify 0.01 \
             -append lgm_simple.shp lgm_alpen.shp
 fi
+
+# Batchelor et al. (2019) LGM and MIS4 ice outlines
+wget -nc https://osf.io/gzkwc/download -O LGM_best_estimate.dbf
+wget -nc https://osf.io/xm6tu/download -O LGM_best_estimate.prj
+wget -nc https://osf.io/9yhdv/download -O LGM_best_estimate.shp
+wget -nc https://osf.io/9bjwn/download -O LGM_best_estimate.shx
+wget -nc https://osf.io/6rk85/download -O MIS4_best_estimate.dbf
+wget -nc https://osf.io/2jkua/download -O MIS4_best_estimate.prj
+wget -nc https://osf.io/4q9f2/download -O MIS4_best_estimate.shp
+wget -nc https://osf.io/kj5mv/download -O MIS4_best_estimate.shx
