@@ -54,19 +54,6 @@ def draw_model_domains(ax, domains, **kwargs):
         ax.text(0, 0, name, fontsize=4, transform=proj)
 
 
-def draw_shapefile(filename, ax=None, crs=None, **kwargs):
-    """Add shapefile geometries without duplicates."""
-    ax = ax or plt.gca()
-    crs = crs or ccrs.PlateCarree()
-    shp = cshp.Reader(filename)
-    geometries = []
-    for geom in shp.geometries():
-        if geom not in geometries:
-            geometries.append(geom)
-    ax.add_geometries(geometries, crs, **kwargs)
-    shp = None
-
-
 def main():
     """Main program called during execution."""
 
@@ -75,7 +62,6 @@ def main():
     ax = fig.add_axes([0, 0, 1, 1], projection=ccrs.LambertAzimuthalEqualArea(
         central_longitude=135, central_latitude=60))
     ax.set_extent([-3.6e6, 3.6e6, -1.6e6, 3.2e6], crs=ax.projection)
-    ax.set_rasterization_zorder(2.5)
 
     # add etopo1bed background
     csr.add_topography('../data/external/ETOPO1_Bed_c_geotiff_asia.tif',
@@ -89,11 +75,11 @@ def main():
     cne.add_graticules(ax=ax, interval=5, scale='50m')
 
     # add glaciers and domains
-    draw_shapefile('../data/external/MIS4_best_estimate.shp',
-                   ax=ax, alpha=0.75, facecolor='C1',
-                   crs=ccrs.LambertAzimuthalEqualArea(central_latitude=90))
-    draw_shapefile('../data/external/LGM_best_estimate.shp',
-                   ax=ax, alpha=0.75, facecolor='C0')
+    cne.add_shapefile('../data/external/MIS4_best_estimate.shp',
+                      ax=ax, alpha=0.75, facecolor='C1',
+                      crs=ccrs.LambertAzimuthalEqualArea(central_latitude=90))
+    cne.add_shapefile('../data/external/LGM_best_estimate.shp',
+                      ax=ax, alpha=0.75, facecolor='C0')
     draw_model_domains(ax=ax, domains=DOMAINS, color='C3', zorder=3)
 
     # add legend
