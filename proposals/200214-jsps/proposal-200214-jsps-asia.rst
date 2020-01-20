@@ -1,4 +1,4 @@
-.. Copyright (c) 2019, Julien Seguinot <seguinot@vaw.baug.ethz.ch>
+.. Copyright (c) 2019--2020, Julien Seguinot <seguinot@vaw.baug.ethz.ch>
 .. Creative Commons Attribution-ShareAlike 4.0 International License
 .. (CC BY-SA 4.0, http://creativecommons.org/licenses/by-sa/4.0/)
 
@@ -26,6 +26,38 @@ Modelling MIS4 glaciations in North Asia and Japan
 
 .. (Write concisely in a way that can be easily understood by persons outside
    your field of specialization, 1 page)
+
+**a. Alpine ice sheet**
+
+* My primary field of research is paleo-ice sheet modelling
+* Models that incorporate ice physics and use geological validation data
+* My most recent publication is on the Alpine ice sheet
+* The first complete pucture of the ice sheet through borders etc
+* The ice sheet is more dynamic than previously thought
+* The computations were performed on Piz Daint
+* The results were reported by major media outlets in Switzerland and abroad
+* Outreach materials are part of a permanent exhibition
+
+**b. Bowdoin glacier**
+
+* In 2015 and 2016 I have participated in two field campaigns
+* I retrieved and analysed glacier borehole data
+* I visited Hokkaido university for one year in 2018 -- 2019
+* A first paper is in review
+
+**c. Cordilleran ice sheet**
+
+* My PhD thesis is about the Cordilleran ice sheet
+* I applied PISM to paleoglaciology
+* Due to complex climate high-resolution climate data is needed
+* The ice sheet formed from numerous mountain ice fields
+* Rapid retreat and ...
+
+**d. Glacier melt parametrization**
+
+* Day-to-day temperature variations significantly affect melt
+* These are now implemented in PISM
+
 
 17. List of Major Publications
 ------------------------------
