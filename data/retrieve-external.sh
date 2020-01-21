@@ -18,11 +18,14 @@ wdir+="cell_registered/georeferenced_tiff"
 file="ETOPO1_Bed_c_geotiff"
 wget -nc $wdir/$file.zip
 unzip -n $file.zip
-gdalwarp -s_srs "+ellps=WGS84 +proj=lonlat" \
-         -t_srs "+ellps=WGS84 +proj=laea +lon_0=135 +lat_0=60" \
-         -r cubic -srcnodata -2147483648 -dstnodata -32768 \
+gdalargs="-r cubic -s_srs +proj=longlat -srcnodata -2147483648 \
+-dstnodata -32768 -wm 1024 -wo SOURCE_EXTRA=500"
+gdalwarp -t_srs "+proj=laea +lon_0=135 +lat_0=60" \
          -te -6000000 -4000000 6000000 4000000 -tr 5000 5000 \
-         -wm 1024 -wo SOURCE_EXTRA=500 ${file}{,_asia}.tif
+         $gdalargs ${file}{,_asia}.tif
+gdalwarp -t_srs "+proj=laea +lon_0=140 +lat_0=40" \
+         -te -1000000 -1000000 1000000 1000000 -tr 1000 1000 \
+         $gdalargs ${file}{,_japan}.tif
 
 # SRTM land topography data  # FIXME use pismx pseudo-boot file
 wdir="http://srtm.csi.cgiar.org/SRT-ZIP/SRTM_V41/SRTM_Data_GeoTiff"
