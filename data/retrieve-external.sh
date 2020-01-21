@@ -21,29 +21,28 @@ unzip -n $file.zip
 gdalargs="-r cubic -s_srs +proj=longlat -srcnodata -2147483648 \
 -dstnodata -32768 -wm 1024 -wo SOURCE_EXTRA=500"
 gdalwarp -t_srs "+proj=laea +lon_0=135 +lat_0=60" \
-         -te -6000000 -4000000 6000000 4000000 -tr 5000 5000 \
-         $gdalargs ${file}{,_asia}.tif
+         -te -4000000 -2000000 4000000 4000000 -tr 4000 4000 \
+         $gdalargs ${file}{,_asia}.tif  # 8000x6000km @4km
 gdalwarp -t_srs "+proj=laea +lon_0=140 +lat_0=40" \
-         -te -1000000 -1000000 1000000 1000000 -tr 1000 1000 \
-         $gdalargs ${file}{,_japan}.tif
+         -te -1000000 -750000 1000000 750000 -tr 1000 1000 \
+         $gdalargs ${file}{,_japan}.tif  # 2000x1500km @1km
 
 # SRTM land topography data  # FIXME use pismx pseudo-boot file
 wdir="http://srtm.csi.cgiar.org/SRT-ZIP/SRTM_V41/SRTM_Data_GeoTiff"
-wdir="http://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/tiff" #srtm_65_04.zip
-#http://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/tiff/srtm_65_04.zip
-for tile in srtm_{64_05,65_04}
+wdir="http://srtm.csi.cgiar.org/wp-content/uploads/files/srtm_5x5/tiff"
+for tile in srtm_{64_05,64_06,65_04}
 do
     wget -nc $wdir/$tile.zip
     unzip -n $tile.zip $tile.{hdr,tfw,tif}
 done
-gdalwarp $args -r cubic -s_srs "+proj=longlat" \
+gdalwarp -r cubic -s_srs "+proj=longlat" \
          -t_srs '+proj=laea +lon_0=138 +lat_0=36' \
-         -te -75000 -100000 75000 100000 -tr 1000 1000 \
-         srtm_64_05.tif srtm_chubu.tif
-gdalwarp $args -r cubic -s_srs "+proj=longlat" \
+         -te -100000 -150000 100000 150000 -tr 200 200 \
+         srtm_64_{05,06}.tif srtm_chubu.tif  # 200x300km @200m
+gdalwarp -r cubic -s_srs "+proj=longlat" \
          -t_srs '+proj=laea +lon_0=143 +lat_0=43' \
-         -te -75000 -100000 75000 100000 -tr 1000 1000 \
-         srtm_65_04.tif srtm_hokkaido.tif
+         -te -100000 -150000 100000 150000 -tr 200 200 \
+         srtm_65_04.tif srtm_hokkaido.tif  # 200x300km @200m
 
 # Ehlers et al. (2011) simplified LGM outline
 wdir="http://static.us.elsevierhealth.com/ehlers_digital_maps/"
