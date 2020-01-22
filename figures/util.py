@@ -33,10 +33,3 @@ def draw_model_domains(ax, domains, names=True, **kwargs):
             central_longitude=lon, central_latitude=lat)
         draw_model_domain(ax, extent, name=(name if names is True else None),
                           transform=proj, **kwargs)
-
-
-def savefig(fig=None):
-    """Save figure to script filename."""
-    fig = fig or plt.gcf()
-    res = fig.savefig(os.path.splitext(sys.argv[0])[0])
-    return res

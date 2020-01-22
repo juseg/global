@@ -70,7 +70,7 @@ def main():
                'Planned model domains'], loc='lower right')
 
     # save
-    util.savefig(fig)
+    fig.savefig(__file__[:-3])
 
 
 if __name__ == '__main__':
