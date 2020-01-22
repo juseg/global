@@ -8,6 +8,7 @@
 
 import matplotlib as mpl
 import cartopy.crs as ccrs
+import cartowik.decorations as cde
 import cartowik.naturalearth as cne
 import cartowik.shadedrelief as csr
 import absplots as apl
@@ -36,6 +37,9 @@ def main():
         ax = fig.add_axes(pos, projection=ccrs.LambertAzimuthalEqualArea(
             central_longitude=lon, central_latitude=lat))
         ax.set_extent(extent, crs=ax.projection)
+
+        # add region label
+        cde.add_subfig_label(region, ax=ax)
 
         # add etopo1bed background
         csr.add_topography('../data/external/{}_{}.tif'.format(
