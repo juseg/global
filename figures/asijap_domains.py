@@ -56,7 +56,8 @@ def main():
         # add glaciers and domains
         cne.add_shapefile('../data/external/lgm.shp',
                           ax=ax, alpha=0.75, facecolor='C0')
-        util.draw_model_domains(ax=ax, domains=DOMAINS, grid=False, color='C3')
+        util.draw_model_domains(ax=ax, domains=DOMAINS, color='C3', grid=False,
+                                names=(region != 'Japan'))
 
     # add legend
     fig.legend([mpl.patches.Patch(facecolor='C0', alpha=0.75),
