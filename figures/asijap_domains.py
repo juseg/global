@@ -16,10 +16,10 @@ import util
 
 
 DOMAINS = {
-    'Hida':          (138, 36, [-40e3, -20e3, +40e3, +60e3]),
-    'Kiso':          (138, 36, [-30e3, -10e3, -40e3, -20e3]),
-    'Akaishi':       (138, 36, [+10e3, +30e3, -40e3, -20e3]),
-    'Hidaka':        (143, 43, [-30e3, -10e3, -40e3, -20e3])}
+    'Hida':          (138, 36, [-50e3, -10e3, +30e3, +90e3]),
+    'Kiso':          (138, 36, [-20e3, -10e3, -40e3, -20e3]),
+    'Akaishi':       (138, 36, [+00e3, +30e3, -80e3, -20e3]),
+    'Hidaka':        (143, 43, [-30e3, +10e3, -80e3, -20e3])}
 
 REGIONS = {
     'Chubu':    (138, 36, [-080e3, 100e3, -120e3, 120e3]),
@@ -66,8 +66,8 @@ def main():
         cne.add_graticules(ax=ax, interval=5, scale=scale)
 
         # add glaciers and domains
-        cne.add_shapefile('../data/external/lgm.shp',
-                          ax=ax, alpha=0.75, facecolor='C0')
+        cne.add_shapefile('../data/external/lgm.shp', ax=ax, alpha=0.75,
+                          facecolor='C0', edgecolor='C0')
         util.draw_model_domains(ax=ax, domains=DOMAINS, color='C3', grid=False,
                                 names=(region != 'Japan'))
 
