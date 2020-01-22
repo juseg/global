@@ -22,9 +22,14 @@ DOMAINS = {
     'Hidaka':        (143, 43, [-30e3, -10e3, -40e3, -20e3])}
 
 REGIONS = {
-    'Chubu':    (138, 36, [-070e3, 080e3, -095e3, 105e3], [.0, .0, .5, 1.]),
-    'Hokkaido': (143, 43, [-100e3, 050e3, -110e3, 090e3], [.5, .0, .5, 1.]),
-    'Japan':    (140, 40, [-500e3, 500e3, -750e3, 750e3], [.3, .4, .4, .5])}
+    'Chubu':    (138, 36, [-080e3, 100e3, -120e3, 120e3]),
+    'Hokkaido': (143, 43, [-100e3, 080e3, -120e3, 120e3]),
+    'Japan':    (140, 40, [-500e3, 500e3, -750e3, 750e3])}
+
+POSITIONS = {
+    'Chubu':     [0.0, 0.0, 0.5, 1.0],
+    'Hokkaido':  [0.5, 0.0, 0.5, 1.0],
+    'Japan':     [0.3, 0.4, 0.4, 0.5]}
 
 
 def main():
@@ -32,10 +37,10 @@ def main():
 
     # initialize figure
     fig = apl.figure_mm(figsize=(180, 120))
-    grid = dict()
-    for region, (lon, lat, extent, pos) in REGIONS.items():
-        ax = fig.add_axes(pos, projection=ccrs.LambertAzimuthalEqualArea(
-            central_longitude=lon, central_latitude=lat))
+    for region, (lon, lat, extent) in REGIONS.items():
+        ax = fig.add_axes(
+            POSITIONS[region], projection=ccrs.LambertAzimuthalEqualArea(
+                central_longitude=lon, central_latitude=lat))
         ax.set_extent(extent, crs=ax.projection)
 
         # add region label
@@ -58,6 +63,11 @@ def main():
                           ax=ax, alpha=0.75, facecolor='C0')
         util.draw_model_domains(ax=ax, domains=DOMAINS, color='C3', grid=False,
                                 names=(region != 'Japan'))
+
+        # on Japan map, plot inset regions
+        if region == 'Japan':
+            util.draw_model_domains(ax=ax, color='0.25', domains={
+                k: REGIONS[k] for k in REGIONS if k != 'Japan'})
 
     # add legend
     fig.legend([mpl.patches.Patch(facecolor='C0', alpha=0.75),
