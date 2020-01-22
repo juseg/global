@@ -31,12 +31,19 @@ POSITIONS = {
     'Hokkaido':  [0.5, 0.0, 0.5, 1.0],
     'Japan':     [0.3, 0.4, 0.4, 0.5]}
 
+VOLCANOES = {
+    'Fuji':     (138.73, 35.36),
+    'Norikura': (137.55, 36.11),
+    'Ontake':   (137.48, 35.89),
+    'Asahi':    (142.85, 43.66)}
+
 
 def main():
     """Main program called during execution."""
 
     # initialize figure
     fig = apl.figure_mm(figsize=(180, 120))
+    lonlat = ccrs.PlateCarree()
     for region, (lon, lat, extent) in REGIONS.items():
         ax = fig.add_axes(
             POSITIONS[region], projection=ccrs.LambertAzimuthalEqualArea(
@@ -68,6 +75,13 @@ def main():
         if region == 'Japan':
             util.draw_model_domains(ax=ax, color='0.25', domains={
                 k: REGIONS[k] for k in REGIONS if k != 'Japan'})
+
+        # on map insets, add active volcanoes
+        if region != 'Japan':
+            for name, coords in VOLCANOES.items():
+                ax.plot(*coords, color='C3', marker='o', transform=lonlat)
+                ax.text(*coords, name+'\n\n', color='C3', fontsize=6,
+                        fontweight='bold', transform=lonlat, va='center')
 
     # add legend
     fig.legend([mpl.patches.Patch(facecolor='C0', alpha=0.75),
