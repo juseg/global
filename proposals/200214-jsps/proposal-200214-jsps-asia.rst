@@ -58,6 +58,9 @@ Modelling MIS4 glaciations in North Asia and Japan
 * Day-to-day temperature variations significantly affect melt
 * These are now implemented in PISM
 
+.. raw:: pdf
+
+   PageBreak
 
 17. List of Major Publications
 ------------------------------
@@ -65,6 +68,100 @@ Modelling MIS4 glaciations in North Asia and Japan
 .. (Authors (all), title, Journal,  Vol.　, No　, pp.   -   , Month, Year)
    (This list is to include your peer-reviewed papers that have been printed or
    are accepted for publication., 1 page)
+
+**First author peer-reviewed**
+
+* **J. Seguinot**, M. Funk, A. Bauder, T. Wyder, C. Senn, S. Sugiyama.
+  Englacial warming indicates deep crevassing in Bowdoin Glacier, Greenland.
+  In review for *Frontiers in Earth Sciences*, 2020.
+
+* **J. Seguinot**, S. Ivy-Ochs, G. Jouvet, M. Huss, M. Funk, and F. Preusser.
+  Modelling last glacial cycle ice dynamics in the Alps.
+  *The Cryosphere*, 12:3265--3285,
+  doi:10.5194/tc-12-3265-2018, 2018.
+
+* **J. Seguinot**, I. Rogozhina, A. P. Stroeven, M. Margold, and J. Kleman.
+  Numerical simulations of the Cordilleran ice sheet through the last glacial
+  cycle.
+  *The Cryosphere*, 10(2):639--664,
+  doi:10.5194/tc-10-639-2016, 2016.
+
+* **J. Seguinot**, C. Khroulev, I. Rogozhina, Q. Zhang, and A. P. Stroeven.
+  The effect of climate forcing on numerical simulations of the Cordilleran
+  ice sheet at the last Glacial Maximum.
+  *The Cryosphere*, 8(3):1087--1103,
+  doi:10.5194/tc-8-1087-2014, 2014.
+
+* **J. Seguinot** and I. Rogozhina.
+  Daily temperature variability predetermined by thermal conditions over
+  ice-sheet surfaces.
+  *J. Glaciol.*, 60(221):603--605,
+  doi:10.3189/2014jog14j036, 2014.
+
+* **J. Seguinot**.
+  Spatial and seasonal effects of temperature variability in a positive
+  degree-day glacier surface mass-balance model
+  *J. Glaciol.*, 59(218):1202--1204,
+  doi:10.3189/2013JoG13J081, 2013.
+
+**Co-author peer-reviewed**
+
+* M. A. Imhof, D. Cohen, **J. Seguinot**, A. Aschwanden, M. Funk and
+  G. Jouvet.
+  Modelling a paleo valley glacier network using a hybrid model: an assessment
+  with a Stokes ice flow model.
+  *J. Glaciology*, 65(254):1000--1010.
+  doi:10.1017/jog.2019.77, 2019.
+
+* B. de Fleurian, M. A. Werder, S. Beyer, D. J. Brinkerhoff, I. Delaney,
+  C. F. Dow, J. Downs, O. Gagliardini, M. J. Hoffman, R. LeB Hooke,
+  **J. Seguinot**, and A. N. Sommers.
+  SHMIP The Subglacial Hydrology Model Intercomparison Project.
+  *J. Glaciology*, 64(248):897--916,
+  doi:10.1017/jog.2018.78, 2018.
+
+* G. Jouvet, Y. Weidmann, M. Kneib, M. Detert, **J. Seguinot**, D. Sakakibara,
+  and S. Sugiyama.
+  Short-lived ice speed-up and plume water flow captured by a VTOL UAV give
+  insights into subglacial hydrological system of Bowdoin Glacier.
+  *Remote Sens. of Environ.*, 217:389--399,
+  doi:10.1016/j.rse.2018.08.027, 2018.
+
+* B. Menounos, B. M. Goehring, G. Osborn, M. Margold, B. Ward, J. Bond,
+  G. K. C. Clarke, J. J. Clague, T. Lakeman, J. Koch, M. W. Caffee, J. Gosse,
+  A. P. Stroeven, **J. Seguinot**, and J. Heyman.
+  Cordilleran Ice Sheet mass loss preceded climate reversals near the
+  Pleistocene Termination.
+  *Science*, 358(6364):781--784,
+  doi:10.1126/science.aan3001, 2017.
+
+* G. Jouvet, **J. Seguinot**, S. Ivy-Ochs, and M. Funk.
+  Modelling the diversion of erratic boulders by the Valais Glacier during the
+  Last Glacial Maximum.
+  *J. Glaciol.*, 63(239):487--498,
+  doi:10.1017/jog.2017.7, 2017.
+
+* G. Jouvet, Y. Weidmann, **J. Seguinot**, M. Funk, T. Abe, D. Sakakibara,
+  H. Seddik, and S. Sugiyama.
+  Initiation of a major calving event on the Bowdoin Glacier captured by UAV
+  photogrammetry.
+  *The Cryosphere*, 11(2):911--921,
+  doi:10.5194/tc-11-911-2017, 2017.
+
+* P. Becker, **J. Seguinot**, G. Jouvet, and M. Funk.
+  Last Glacial Maximum precipitation pattern in the Alps inferred from glacier
+  modelling.
+  *Geogr. Helv.*, 71(3):173-187,
+  doi:10.5194/gh-71-173-2016, 2016.
+
+* C. Petit, Y. Gunnell, N. Gonga-Saholiariliva, B. Meyer, and **J. Séguinot**.
+  Faceted spurs at normal fault scarps: insights from numerical modeling.
+  *J. Geophys. Res.*, 114:B05403,
+  doi:10.1029/2008JB005955, 2009.
+
+.. raw:: pdf
+
+   PageBreak
 
 18. Research plan in Japan
 --------------------------
