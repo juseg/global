@@ -93,6 +93,15 @@ Modelling MIS4 glaciations in North Asia and Japan
 * An estimate of ice volume in ne asia through mis stages
 * A framework for multidomain paleoglacier modelling
 
+.. figure:: ../../figures/asijap_domains.pdf
+
+   Fig. 1 - Documented glaciation (blue), planned model domains (red
+   rectangles) and potentially glaciated active volanoes (red dots) in Japan.
+
+.. figure:: ../../figures/asimis_domains.pdf
+
+   Fig. 2 - Documented MIS 2 (orange) and 4 (blue) glaciation and planned model
+   domains in Northeast Asia and Alaska.
 
 19. Your Academic Goals and Career Prospects after the Fellowship
 -----------------------------------------------------------------
