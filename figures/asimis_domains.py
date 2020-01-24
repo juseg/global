@@ -62,8 +62,8 @@ def main():
     util.draw_model_domains(ax=ax, domains=DOMAINS, color='C3', zorder=3)
 
     # add legend
-    ax.legend([mpl.patches.Patch(facecolor='C1', alpha=0.75),
-               mpl.patches.Patch(facecolor='C0', alpha=0.75),
+    ax.legend([mpl.patches.Patch(facecolor='C0', alpha=0.75),
+               mpl.patches.Patch(facecolor='C1', alpha=0.75),
                mpl.patches.Patch(facecolor='none', edgecolor='C3')],
               ['MIS 2 (Batchelor et al., 2019)',
                'MIS 4 (Batchelor et al., 2019)',
