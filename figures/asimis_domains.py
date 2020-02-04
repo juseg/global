@@ -41,6 +41,7 @@ def main():
     ax = fig.add_axes([0, 0, 1, 1], projection=ccrs.LambertAzimuthalEqualArea(
         central_longitude=135, central_latitude=60))
     ax.set_extent([-3.6e6, 3.6e6, -1.6e6, 3.2e6], crs=ax.projection)
+    ax.set_rasterization_zorder(2.5)
 
     # add etopo1bed background
     csr.add_topography('../data/external/ETOPO1_Bed_c_geotiff_asia.tif',

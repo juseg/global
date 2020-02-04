@@ -49,6 +49,7 @@ def main():
             POSITIONS[region], projection=ccrs.LambertAzimuthalEqualArea(
                 central_longitude=lon, central_latitude=lat))
         ax.set_extent(extent, crs=ax.projection)
+        ax.set_rasterization_zorder(2.5)
 
         # add region label
         cde.add_subfig_label(region, ax=ax)
