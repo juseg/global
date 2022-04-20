@@ -22,14 +22,19 @@ DOMAINS = {
     'Hidaka':        (143, 43, [-30e3, +10e3, -80e3, -20e3])}
 
 REGIONS = {
-    'Chubu':    (138, 36, [-080e3, 100e3, -120e3, 120e3]),
-    'Hokkaido': (143, 43, [-100e3, 080e3, -120e3, 120e3]),
+    #'Chubu':    (138, 36, [-080e3, 100e3, -120e3, 120e3]),
+    #'Hokkaido': (143, 43, [-100e3, 080e3, -120e3, 120e3]),
+    'Chubu':    (138, 36, [-070e3, 090e3, -120e3, 120e3]),
+    'Hokkaido': (143, 43, [-050e3, 030e3, -120e3, 120e3]),
     'Japan':    (140, 40, [-500e3, 500e3, -750e3, 750e3])}
 
 POSITIONS = {
-    'Chubu':     [0.0, 0.0, 0.5, 1.0],
-    'Hokkaido':  [0.5, 0.0, 0.5, 1.0],
-    'Japan':     [0.3, 0.4, 0.4, 0.5]}
+    #'Chubu':     [0.0, 0.0, 0.5, 1.0],
+    #'Hokkaido':  [0.5, 0.0, 0.5, 1.0],
+    #'Japan':     [0.3, 0.4, 0.4, 0.5]}
+    'Chubu':     [0.0, 0.0, 2/3, 1.0],
+    'Hokkaido':  [2/3, 0.0, 1/3, 1.0],
+    'Japan':     [1/3, 1/2, 1/3, 1/2]}
 
 VOLCANOES = {
     'Fuji':     (138.73, 35.36),
@@ -42,7 +47,7 @@ def main():
     """Main program called during execution."""
 
     # initialize figure
-    fig = apl.figure_mm(figsize=(180, 120))
+    fig = apl.figure_mm(figsize=(90, 90))
     lonlat = ccrs.PlateCarree()
     for region, (lon, lat, extent) in REGIONS.items():
         ax = fig.add_axes(
@@ -88,7 +93,7 @@ def main():
     fig.legend([mpl.patches.Patch(facecolor='C0', alpha=0.75),
                 mpl.patches.Patch(facecolor='none', edgecolor='C3')],
                ['MIS 4 (Ehlers et al., 2011)', 'Planned model domains'],
-               loc='upper right')
+               loc='lower right')
 
     # save
     fig.savefig(__file__[:-3])
