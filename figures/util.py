@@ -22,8 +22,9 @@ def draw_model_domain(ax, extent, grid=True, name=None, **kwargs):
         ax.plot([west, east], [0, 0], lw=0.5, **kwargs)
         ax.plot(0, 0, marker='o', **kwargs)
     if name is not None:
-        ax.text(west, north, name+'\n\n', fontsize=6, fontweight='bold',
-                va='center', **{k: kwargs[k] for k in ('color', 'transform')})
+        ax.text((west+east)/2, (south+north)/2, name, color='0.25', fontsize=6,
+                fontweight='bold', ha='center', va='center',
+                **{k: kwargs[k] for k in ('transform',)})
 
 
 def draw_model_domains(ax, domains, names=True, **kwargs):
