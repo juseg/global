@@ -6,6 +6,7 @@
 # ---------
 
 PAPER = proposal-200214-jsps-asia
+REFS = ../../../references/references.bib
 REV = $(shell git describe --abbrev=0 --match=asijap*)
 
 
@@ -32,21 +33,20 @@ diff: $(PAPER)-diff.pdf
 # ---------------
 
 # stripped bib patterned rule
-%.bib: %.aux ../../references/references.bib
-	bibtool ../../references/references.bib -x $< > $@
+%.bib: %.aux $(REFS)
+	bibtool $(REFS) -x $< > $@
 
 # latex pdf patterned rule
 %.pdf: %.tex # ../../references/references.bib
 	latexmk -pdf -dvi- -ps- $<
 
 # latex rtf patterned rule (no eqs, no fields)
-%.rtf: %.tex ../../references/references.bib
+%.rtf: %.tex $(REFS)
 	latex2rtf -E0 -f0 $<
 
 # libreoffice txt patterned rule (preserve special characters)
 %.txt: %.rtf
 	libreoffice --convert-to "txt:Text (encoded):UTF8" $<
-	sed -i -n '/^Abstract/,/^References/p' $@
 
 # latex diff patterned rule
 %-diff.tex: %.tex
