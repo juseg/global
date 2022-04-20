@@ -15,32 +15,32 @@ import util
 
 
 DOMAINS = {
-    'Altai':          (92, 48, [-100e3, 100e3, -100e3, 100e3]),
-    'Putorana':       (94, 69, [-100e3, 100e3, -100e3, 100e3]),
-    'Sayan':          (98, 53, [-100e3, 100e3, -100e3, 100e3]),
-    'Khangai':       (100, 49, [-100e3, 100e3, -100e3, 100e3]),
-    'Transbaikal':   (117, 57, [-100e3, 100e3, -100e3, 100e3]),
-    'Stanovoy':      (126, 56, [-100e3, 100e3, -100e3, 100e3]),
-    'Verkhoyansk':   (129, 67, [-100e3, 100e3, -100e3, 100e3]),
-    'YamAlin':       (135, 54, [-100e3, 100e3, -100e3, 100e3]),
-    'Kolyma':        (159, 63, [-100e3, 100e3, -100e3, 100e3]),
-    'Chersky':       (143, 64, [-100e3, 100e3, -100e3, 100e3]),
-    'Kamchatka':     (160, 55, [-100e3, 100e3, -100e3, 100e3]),
-    'Anadyr':        (170, 67, [-100e3, 100e3, -100e3, 100e3]),
-    'Koryak':        (172, 62, [-100e3, 100e3, -100e3, 100e3]),
-    'Chukotka':      (177, 68, [-100e3, 100e3, -100e3, 100e3]),
-    'Brooks':       (-152, 68, [-100e3, 100e3, -100e3, 100e3]),
-    'Ahklun':       (-161, 59, [-100e3, 100e3, -100e3, 100e3])}
+    'Altai':          (95, 50, [-750e3,-150e3, -300e3, 300e3]),
+    'Putorana':       (95, 70, [-300e3, 200e3, -450e3, 150e3]),
+    'Sayan':          (95, 50, [-150e3, 550e3, +050e3, 550e3]),
+    'Khangai':        (95, 50, [ 150e3, 600e3, -400e3,-200e3]),
+    'Transbaikal':   (115, 55, [-450e3, 350e3, -100e3, 500e3]),
+    #'Stanovoy':      (130, 55, [-100e3, 300e3, +000e3, 200e3]),
+    'Verkhoyansk':   (130, 65, [-250e3, 350e3, -200e3, 600e3]),
+    #'YamAlin':       (135, 52, [-100e3, 100e3, -200e3, 200e3]),
+    'Kolyma':        (160, 60, [-450e3, 350e3, -100e3, 600e3]),
+    'Chersky':       (160, 60, [-1250e3,-450e3,-050e3, 1150e3]),
+    'Kamchatka':     (160, 60, [-300e3, 200e3,-1000e3, 100e3]),
+    'Anadyr':        (160, 60, [ 000e3, 500e3,  550e3,1050e3]),
+    'Koryak':        (160, 60, [ 200e3,1000e3, -50e3, 550e3]),
+    'Chukotka':      (160, 60, [500e3, 1500e3, 550e3, 1200e3]),
+    'Brooks':       (-152, 70, [-450e3, 450e3, -400e3, 000e3]),
+    'Ahklun':       (-160, 60, [-150e3, 150e3, -150e3, 150e3])}
 
 
 def main():
     """Main program called during execution."""
 
     # initialize figure
-    fig = apl.figure_mm(figsize=(180, 120))
+    fig = apl.figure_mm(figsize=(180, 90))
     ax = fig.add_axes([0, 0, 1, 1], projection=ccrs.LambertAzimuthalEqualArea(
         central_longitude=135, central_latitude=60))
-    ax.set_extent([-3.6e6, 3.6e6, -1.6e6, 3.2e6], crs=ax.projection)
+    ax.set_extent([-4e6, 4e6, -1e6, 3e6], crs=ax.projection)
     ax.set_rasterization_zorder(2.5)
 
     # add etopo1bed background
@@ -60,7 +60,7 @@ def main():
                       crs=ccrs.LambertAzimuthalEqualArea(central_latitude=90))
     cne.add_shapefile('../data/external/LGM_best_estimate.shp',
                       ax=ax, alpha=0.75, facecolor='C0')
-    util.draw_model_domains(ax=ax, domains=DOMAINS, color='C3', zorder=3)
+    util.draw_model_domains(ax=ax, domains=DOMAINS, color='C3', grid=False, zorder=3)
 
     # add legend
     ax.legend([mpl.patches.Patch(facecolor='C0', alpha=0.75),
@@ -68,7 +68,7 @@ def main():
                mpl.patches.Patch(facecolor='none', edgecolor='C3')],
               ['MIS 2 (Batchelor et al., 2019)',
                'MIS 4 (Batchelor et al., 2019)',
-               'Planned model domains'], loc='lower right')
+               'Planned model domains'], loc='upper left')
 
     # save
     fig.savefig(__file__[:-3])
