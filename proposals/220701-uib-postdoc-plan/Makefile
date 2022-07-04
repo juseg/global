@@ -6,8 +6,8 @@
 # ---------
 
 PAPER = 220701-uib-postdoc-plan
-REFS = ../../../references/references.bib
-REV = $(shell git describe --abbrev=0 --match=asijap*)
+BIB = ../../../references/references.bib
+REV = $(shell git describe --abbrev=0 --match=*)
 
 
 # Named rules
@@ -33,28 +33,31 @@ diff: $(PAPER)-diff.pdf
 # ---------------
 
 # stripped bib patterned rule
-%.bib: %.aux $(REFS)
-	bibtool $(REFS) -x $< > $@
+%.bib: %.aux $(BIB)
+	bibtool $(BIB) -d -q -x $< > $@
 
 # latex pdf patterned rule
-%.pdf: %.tex # ../../references/references.bib
-	latexmk -pdf -dvi- -ps- $<
+%.pdf: %.tex $(BIB)
+	latexmk -pdf $<
 
 # latex rtf patterned rule (no eqs, no fields, no monospace links)
-%.rtf: %.tex $(REFS)
+%.rtf: %.tex $(BIB)
 	latex2rtf -E0 -f0 $<
 	sed -i "s|\\\f3 \\\field|\\\field|g" $@
 
 # libreoffice txt patterned rule (preserve special characters)
 %.txt: %.rtf
 	libreoffice --convert-to "txt:Text (encoded):UTF8" $<
+	sed -i -n '/^Abstract/,/^References/p' $@
 
 # latex diff patterned rule
 %-diff.tex: %.tex
-	latexdiff-vc --math-markup=3 --append-textcmd=centerline --force --git -r $(REV) $<
+	latexdiff-vc --disable-citation-markup --force --git -r $(REV) $<
 	mv $(basename $@)$(REV).tex $@
 
-# clean up
+# Clean up
+# --------
+
 .PHONY: clean
 clean:
 	latexmk -pdf -CA
