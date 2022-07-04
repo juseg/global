@@ -1,23 +1,30 @@
 % Postdoc development plan due 2022.07.01.
 
-% sans-serif article
-%\documentclass{article}
-%\renewcommand{\familydefault}{\sfdefault}  % sans-serif
-%\usepackage{sectsty}
-%\sectionfont{\fontsize{12}{12}\selectfont} % reduce section font size
-%\setcounter{secnumdepth}{0}                % remove section numbers
+% vanilla article for latex2rtf
+\newif\iflatextortf
+\iflatextortf
+  \documentclass{article}
+  \renewcommand{\cvdoubleitem}[4]{#1: #2; #3: #4}
+  \renewcommand{\href}[2]{\htmladdnormallink{\color{blue}\underline{#2}}{#1}}
 
-% moderncv just looks cool
-\documentclass[11pt,a4paper,sans]{moderncv}
-\name{Julien}{Seguinot}  % only used in metadata
-\moderncvstyle[left]{casual}  % casual (default), classic, oldstyle or banking
-\moderncvcolor{green} % blue (default), orange, green, red, purple, grey or black
+% else moderncv just looks cool
+\else
+  \documentclass[11pt,a4paper,sans]{moderncv}
+  \name{Julien}{Seguinot}  % only used in metadata
+  \moderncvstyle[left]{casual}  % casual (default), classic, oldstyle or banking
+  \moderncvcolor{green} % blue (default), orange, green, red, purple, grey or black
+
+\fi
 
 % latex packages
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage[bottom=0.08\paperheight,top=0.08\paperheight]{geometry}
-\usepackage{booktabs}  % toprule midrule bottomrule
+
+% moderncv section numbers
+\newcounter{secnumber}
+\renewcommand\sectionstyle[1]{{
+  \refstepcounter{secnumber}\sectionfont\textcolor{color1}{\thesecnumber.~#1}}}
 
 % custom commands
 \newcommand{\names}[2]{\cvdoubleitem{First name}{#1}{Last name}{#2}}
@@ -65,7 +72,7 @@
 
 
 % ----------------------------------------------------------------------
-\section{1. Project description for the research}
+\section{Project description for the research}
 % ----------------------------------------------------------------------
 
     \guideline{
@@ -98,7 +105,7 @@
 
 
 % ----------------------------------------------------------------------
-\section{2. Teaching, supervision and other compulsory duties}
+\section{Teaching, supervision and other compulsory duties}
 % ----------------------------------------------------------------------
 
     \guideline{
@@ -119,7 +126,7 @@
     \todo{discuss with Ørjan.}
 
 % ----------------------------------------------------------------------
-\section{3. Scientific supervision}
+\section{Scientific supervision}
 % ----------------------------------------------------------------------
 
 \subsection{a. Responsible for the scientific supervision/guidance of the
@@ -139,7 +146,7 @@
 
 
 % ----------------------------------------------------------------------
-\section{4. Career plan}
+\section{Career plan}
 % ----------------------------------------------------------------------
 
     \guideline{
@@ -166,7 +173,7 @@
 
 
 % ----------------------------------------------------------------------
-\section{5. Project management}
+\section{Project management}
 % ----------------------------------------------------------------------
 
 \guideline{
@@ -192,7 +199,7 @@
 
 
 % ----------------------------------------------------------------------
-\section{6. Internationalization and network building}
+\section{Internationalization and network building}
 % ----------------------------------------------------------------------
 
 \guideline{
@@ -234,7 +241,7 @@
 
 
 % ----------------------------------------------------------------------
-\section{7. Project proposal preparation}
+\section{Project proposal preparation}
 % ----------------------------------------------------------------------
 
     \guideline{
@@ -259,7 +266,7 @@
 
 
 % ----------------------------------------------------------------------
-\section{8. Project reporting}
+\section{Project reporting}
 % ----------------------------------------------------------------------
 
 \guideline{
@@ -271,7 +278,7 @@
 
 
 % ----------------------------------------------------------------------
-\section{9. Appraisal interview}
+\section{Appraisal interview}
 % ----------------------------------------------------------------------
 
 \guideline{

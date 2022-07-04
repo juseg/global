@@ -40,9 +40,10 @@ diff: $(PAPER)-diff.pdf
 %.pdf: %.tex # ../../references/references.bib
 	latexmk -pdf -dvi- -ps- $<
 
-# latex rtf patterned rule (no eqs, no fields)
+# latex rtf patterned rule (no eqs, no fields, no monospace links)
 %.rtf: %.tex $(REFS)
 	latex2rtf -E0 -f0 $<
+	sed -i "s|\\\f3 \\\field|\\\field|g" $@
 
 # libreoffice txt patterned rule (preserve special characters)
 %.txt: %.rtf
