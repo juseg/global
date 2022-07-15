@@ -7,7 +7,7 @@
 
 PAPER = 220701-uib-postdoc-plan
 BIB = ../../../references/references.bib
-REV = $(shell git describe --abbrev=0 --match=*)
+REV = 8ee22b# $(shell git describe --abbrev=0 --match=*)
 
 
 # Named rules
