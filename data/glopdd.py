@@ -73,7 +73,7 @@ def write_massbalance(source='chelsa', offset=0):
         atm.temp, atm.prec, dask='parallelized', input_core_dims=[['time']]*2)
 
     # write output to disk
-    delayed = smb.to_dataset(name='smb').to_netcdf(
+    delayed = smb.astype('f4').to_dataset(name='smb').to_netcdf(
         filepath, compute=False, encoding={'smb': {'zlib': True}})
     with dask.diagnostics.ProgressBar():
         print("Writing global mass balance...")
