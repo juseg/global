@@ -15,9 +15,13 @@ def write_climatology(source='chelsa'):
     """Write global climatology to disk, return file path."""
 
     # if file exists, return path
-    filepath = f'atm.{source}.nc'
+    filepath = f'processed/glopdd.atm.{source}.nc'
     if os.path.isfile(filepath):
         return filepath
+
+    # if missing, create directory
+    if not os.path.exists('processed'):
+        os.makedirs('processed')
 
     # open chelsa global climatology as a dataset
     atm = xr.Dataset({
@@ -44,7 +48,7 @@ def write_massbalance(source='chelsa', offset=0):
     dask.distributed.Client()
 
     # if file exists, return path
-    filepath = f'smb.{source}.{offset*100:04d}.nc'
+    filepath = f'processed/glopdd.smb.{source}.{offset*100:04d}.nc'
     if os.path.isfile(filepath):
         return filepath
 
