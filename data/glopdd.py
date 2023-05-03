@@ -30,12 +30,15 @@ def write_climatology(source='chelsa'):
         'temp': hyoga.open.reprojected._open_climatology(
             source=source, variable='tas')})
 
-    # write to disk as a single file
+    # write to disk as a single file using threaded scheduler, as distributed
+    # scheduler overloads memory, unless we chunk in time and space, but that
+    # results in only one worker working at a time, probably because two
+    # workers can't read the same geotiff file at the same time.
     delayed = atm.to_netcdf(filepath, compute=False, encoding={
         name: {'zlib': True} for name in atm})
     with dask.diagnostics.ProgressBar():
         print("Writing global climatology...")
-        delayed.compute()
+        delayed.compute(scheduler='threads')
 
     # return file path
     return filepath
