@@ -55,9 +55,8 @@ def write_massbalance(source='chelsa', offset=0):
     if os.path.isfile(filepath):
         return filepath
 
-    # open climatology (y>=50 chunks use too much memory on polaris)
-    atm = xr.open_dataset(write_climatology(source=source), chunks={'y': 20})
-    atm = atm.isel(y=slice(0, 4000))
+    # open climatology (y>=40 chunks use too much memory on polaris)
+    atm = xr.open_dataset(write_climatology(source=source), chunks={'y': 25})
 
     # apply temperature offset
     atm['temp'] -= offset
