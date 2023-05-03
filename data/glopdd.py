@@ -37,7 +37,7 @@ def write_climatology(source='chelsa'):
     delayed = atm.to_netcdf(filepath, compute=False, encoding={
         name: {'zlib': True} for name in atm})
     with dask.diagnostics.ProgressBar():
-        print("Writing global climatology...")
+        print(f"Writing {source} global climatology...")
         delayed.compute(scheduler='threads')
 
     # return file path
@@ -76,7 +76,7 @@ def write_massbalance(source='chelsa', offset=0):
     delayed = smb.astype('f4').to_dataset(name='smb').to_netcdf(
         filepath, compute=False, encoding={'smb': {'zlib': True}})
     with dask.diagnostics.ProgressBar():
-        print("Writing global mass balance...")
+        print(f"Writing {source} - {offset:g} global mass balance...")
         delayed.compute(rerun_exceptions_locally=True)
 
     # return file path
