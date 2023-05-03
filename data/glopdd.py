@@ -47,9 +47,6 @@ def write_climatology(source='chelsa'):
 def write_massbalance(source='chelsa', offset=0):
     """Write global mass balance to disk, return file path."""
 
-    # dask dashboard (and useful memory warnings when chunks are too large)
-    dask.distributed.Client()
-
     # if file exists, return path
     filepath = f'processed/glopdd.smb.{source}.{offset*100:04d}.nc'
     if os.path.isfile(filepath):
@@ -83,5 +80,27 @@ def write_massbalance(source='chelsa', offset=0):
     return filepath
 
 
+def write_glacial_inception_threshold(source='chelsa'):
+
+    # if file exists, return path
+    filepath = f'processed/glopdd.git.{source}.nc'
+    if os.path.isfile(filepath):
+        return filepath
+
+    # open (offset, x, y) surface mass balance array
+    offset = xr.DataArray(range(10), dims=['offset'])
+    paths = [write_massbalance(source=source, offset=dt) for dt in offset]
+    smb = xr.open_mfdataset(paths, combine='nested', concat_dim=offset).smb
+    print(smb.dtype)
+
+    # compute glacial inception threshold
+    git = (smb > 0).idxmax(dim='offset').where(smb[-1] > 0).rename('git')
+    delayed = git.astype('f4').to_netcdf(
+        filepath, compute=False, encoding={'git': {'zlib': True}})
+    print(f"Writing {source} glaciation threshold...")
+    delayed.compute(rerun_exceptions_locally=True)
+
+
 if __name__ == '__main__':
-    write_massbalance(source='chelsa')
+    dask.distributed.Client()
+    write_glacial_inception_threshold(source='chelsa')
