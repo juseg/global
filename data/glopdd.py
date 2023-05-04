@@ -88,16 +88,17 @@ def write_glacial_inception_threshold(source='chelsa'):
         return filepath
 
     # open (offset, x, y) surface mass balance array
-    offset = xr.DataArray(range(10), dims=['offset'])
+    offset = xr.DataArray(range(12), dims=['offset'])
     smb = xr.open_mfdataset(
         [write_massbalance(source=source, offset=dt) for dt in offset],
         chunks={'y': 240}, combine='nested', concat_dim=offset).smb
 
     # compute glacial inception threshold
     git = (smb > 0).idxmax(dim='offset').where(smb[-1] > 0).rename('git')
+    git.attrs.update(long_name='glacial inception threshold', units='K')
     delayed = git.astype('f4').to_netcdf(
         filepath, compute=False, encoding={'git': {'zlib': True}})
-    print(f"Writing {source} glaciation threshold...")
+    print(f"Writing {source} glacial inception threshold...")
     delayed.compute(rerun_exceptions_locally=True)
 
 
