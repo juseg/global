@@ -101,6 +101,10 @@ def write_glacial_inception_threshold(source='chelsa'):
     print(f"Writing {source} glacial inception threshold...")
     delayed.compute(rerun_exceptions_locally=True)
 
+    # re-open output and save copy as geotiff
+    git = xr.open_dataarray(filepath, chunks={'y': 240})
+    git.rio.to_raster(filepath[:-3]+'.tif', compress='LZW', tiled=True)
+
 
 if __name__ == '__main__':
     dask.distributed.Client()
