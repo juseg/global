@@ -89,9 +89,9 @@ def write_glacial_inception_threshold(source='chelsa'):
 
     # open (offset, x, y) surface mass balance array
     offset = xr.DataArray(range(10), dims=['offset'])
-    paths = [write_massbalance(source=source, offset=dt) for dt in offset]
-    smb = xr.open_mfdataset(paths, combine='nested', concat_dim=offset).smb
-    print(smb.dtype)
+    smb = xr.open_mfdataset(
+        [write_massbalance(source=source, offset=dt) for dt in offset],
+        chunks={'y': 240}, combine='nested', concat_dim=offset).smb
 
     # compute glacial inception threshold
     git = (smb > 0).idxmax(dim='offset').where(smb[-1] > 0).rename('git')
