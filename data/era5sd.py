@@ -7,11 +7,28 @@
 
 import os
 import cdsapi
+import xarray as xr
+import dask.diagnostics
 
 
 def monstd(start=1981, end=2010):
     """Compute multiyear monthly standard deviation of daily means."""
+
+    # if file exists, return path
+    filepath = f'external/era5.t2m.monstd.{start%100:d}{end%100:d}.nc'
+    if os.path.isfile(filepath):
+        return filepath
+
+    # compute monthly standard deviation
     paths = [dayavg(a, m) for m in range(1, 13) for a in range(start, end+1)]
+    with dask.diagnostics.ProgressBar():
+        with xr.open_mfdataset(paths) as ds:
+            print(f"Computing {filepath} ...")
+            ds.groupby('time.month').std('time').to_netcdf(
+                filepath, encoding={'t2m': {'zlib': True}})
+
+    # return file path
+    return filepath
 
 
 def dayavg(year, month):
