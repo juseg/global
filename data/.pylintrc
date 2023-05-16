@@ -1,0 +1,4 @@
+[BASIC]
+good-names = da, ds, i, j, x, y, z
+[TYPECHECK]
+ignored-modules=scipy.special

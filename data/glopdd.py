@@ -11,7 +11,6 @@ import dask.distributed
 import numpy as np
 import xarray as xr
 import hyoga
-import pypdd
 
 
 def write_climatology(source='chelsa'):
@@ -109,6 +108,7 @@ def write_glacial_inception_threshold(source='chelsa'):
     # re-open output and save copy as geotiff
     git = xr.open_dataarray(filepath, chunks={'y': 240})
     git.rio.to_raster(filepath[:-3]+'.tif', compress='LZW', tiled=True)
+    return filepath
 
 
 if __name__ == '__main__':
