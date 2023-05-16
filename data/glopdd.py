@@ -9,6 +9,7 @@ import os.path
 import dask.diagnostics
 import dask.distributed
 import numpy as np
+import scipy.special as sc
 import xarray as xr
 import hyoga
 
@@ -54,8 +55,18 @@ def write_massbalance(source='chelsa', offset=0):
     if os.path.isfile(filepath):
         return filepath
 
-    # open climatology (y>=480 chunks use too much memory on polaris)
-    atm = xr.open_dataset(write_climatology(source=source), chunks={'y': 240})
+    # load era5 standard deviation
+    with xr.open_dataarray('external/era5.t2m.monstd.8110.nc') as era5:
+        era5 = era5.rename(month='time', lon='x', lat='y')
+        era5 = era5.drop(['realization', 'time'])
+
+    # open climatology (y>=240 chunks use too much memory on polaris)
+    atm = xr.open_dataset(write_climatology(source=source), chunks={'y': 60})
+
+    # interpolate to temperature grid (interp loads all chunks by default
+    # overloading the memory https://github.com/pydata/xarray/issues/6799)
+    stdv = atm.temp.map_blocks(
+        lambda array: era5.interp(x=array.x, y=array.y), template=atm.temp)
 
     # apply temperature offset
     atm['temp'] -= offset
@@ -68,8 +79,10 @@ def write_massbalance(source='chelsa', offset=0):
     snow = atm.prec * (atm.temp < 0)
 
     # compute pdd and melt in kg m-2
+    teff = atm.temp / (2**0.5*stdv)
+    teff = (stdv/2**0.5) * (np.exp(-teff**2)/np.pi**0.5 + teff*sc.erfc(-teff))
     ddf = 3 / 0.910  # kg m-2 K-1 day-1 (~mm w.e. K-1 day-1)
-    pdd = atm.temp * (atm.temp > 0) * months  # degC day
+    pdd = teff * months
     melt = ddf * pdd  # kg m-2
 
     # surface mass balance in kg m-2
