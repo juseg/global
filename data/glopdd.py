@@ -75,12 +75,12 @@ def write_massbalance(source='chelsa', offset=0):
     months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
     months = xr.DataArray(months, coords={'time': atm.time})
 
-    # compute snow accumulation in kg m-2
-    snow = atm.prec * (atm.temp < 0)
+    # compute normalized temp and snow accumulation in kg m-2
+    norm = atm.temp / (2**0.5*stdv)
+    snow = atm.prec * sc.erfc(norm) / 2
 
     # compute pdd and melt in kg m-2
-    teff = atm.temp / (2**0.5*stdv)
-    teff = (stdv/2**0.5) * (np.exp(-teff**2)/np.pi**0.5 + teff*sc.erfc(-teff))
+    teff = (stdv/2**0.5) * (np.exp(-norm**2)/np.pi**0.5 + norm*sc.erfc(-norm))
     ddf = 3 / 0.910  # kg m-2 K-1 day-1 (~mm w.e. K-1 day-1)
     pdd = teff * months
     melt = ddf * pdd  # kg m-2
