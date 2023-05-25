@@ -1,4 +1,7 @@
 #!/usr/bin/python
+# Copyright (c) 2023, Julien Seguinot (juseg.dev)
+# Creative Commons Attribution-ShareAlike 4.0 International License
+# (CC BY-SA 4.0, http://creativecommons.org/licenses/by-sa/4.0/)
 
 """Compute global mass balance from CHELSA climatology."""
 
@@ -6,9 +9,9 @@ import os.path
 import dask.diagnostics
 import dask.distributed
 import numpy as np
+import scipy.special as sc
 import xarray as xr
 import hyoga
-import pypdd
 
 
 def write_climatology(source='chelsa'):
@@ -52,35 +55,49 @@ def write_massbalance(source='chelsa', offset=0):
     if os.path.isfile(filepath):
         return filepath
 
-    # open climatology (y>=40 chunks use too much memory on polaris)
-    atm = xr.open_dataset(write_climatology(source=source), chunks={'y': 25})
+    # load era5 standard deviation
+    with xr.open_dataarray('external/era5.t2m.monstd.8110.nc') as era5:
+        era5 = era5.rename(month='time', lon='x', lat='y')
+        era5 = era5.drop(['realization', 'time'])
+
+    # open climatology (y>=240 chunks use too much memory on polaris)
+    atm = xr.open_dataset(write_climatology(source=source), chunks={'y': 60})
+
+    # interpolate to temperature grid (interp loads all chunks by default
+    # overloading the memory https://github.com/pydata/xarray/issues/6799)
+    stdv = atm.temp.map_blocks(
+        lambda array: era5.interp(x=array.x, y=array.y), template=atm.temp)
 
     # apply temperature offset
     atm['temp'] -= offset
 
-    # convert precipitation from kg m-2 month-1 to m a-1
+    # convert precipitation from kg m-2 month-1 to kg m-2 a-1
     months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
     months = xr.DataArray(months, coords={'time': atm.time})
-    atm['prec'] *= 0.365 / months
 
-    # delay smb (use dask='parallelized' as pdd does not support dask arrays)
-    pdd = pypdd.PDDModel()
-    smb = xr.apply_ufunc(
-        lambda t, p: pdd(t.transpose(2, 0, 1), p.transpose(2, 0, 1))['smb'],
-        atm.temp, atm.prec, dask='parallelized', input_core_dims=[['time']]*2)
+    # compute normalized temp and snow accumulation in kg m-2
+    norm = atm.temp / (2**0.5*stdv)
+    snow = atm.prec * sc.erfc(norm) / 2
+
+    # compute pdd and melt in kg m-2
+    teff = (stdv/2**0.5) * (np.exp(-norm**2)/np.pi**0.5 + norm*sc.erfc(-norm))
+    ddf = 3 / 0.910  # kg m-2 K-1 day-1 (~mm w.e. K-1 day-1)
+    pdd = teff * months
+    melt = ddf * pdd  # kg m-2
+
+    # surface mass balance in kg m-2
+    smb = (snow - melt).sum('time')
 
     # write output to disk
-    delayed = smb.astype('f4').to_dataset(name='smb').to_netcdf(
-        filepath, compute=False, encoding={'smb': {'zlib': True}})
-    with dask.diagnostics.ProgressBar():
-        print(f"Writing {source} - {offset:g} global mass balance...")
-        delayed.compute(rerun_exceptions_locally=True)
+    smb.astype('f4').to_dataset(name='smb').to_netcdf(
+        filepath, encoding={'smb': {'zlib': True}})
 
     # return file path
     return filepath
 
 
 def write_glacial_inception_threshold(source='chelsa'):
+    """Compute glacial inception threshold from mass balance."""
 
     # if file exists, return path
     filepath = f'processed/glopdd.git.{source}.nc'
@@ -104,6 +121,7 @@ def write_glacial_inception_threshold(source='chelsa'):
     # re-open output and save copy as geotiff
     git = xr.open_dataarray(filepath, chunks={'y': 240})
     git.rio.to_raster(filepath[:-3]+'.tif', compress='LZW', tiled=True)
+    return filepath
 
 
 if __name__ == '__main__':
