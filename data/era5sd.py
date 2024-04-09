@@ -11,7 +11,7 @@ import xarray as xr
 import dask.diagnostics
 
 
-def monstd(start=1981, end=2010):
+def compute_std(start=1981, end=2010):
     """Compute multiyear monthly standard deviation of daily means."""
 
     # if file exists, return path
@@ -20,7 +20,8 @@ def monstd(start=1981, end=2010):
         return filepath
 
     # compute monthly standard deviation
-    paths = [dayavg(a, m) for m in range(1, 13) for a in range(start, end+1)]
+    func = download_daily
+    paths = [func(a, m) for m in range(1, 13) for a in range(start, end+1)]
     with dask.diagnostics.ProgressBar():
         with xr.open_mfdataset(paths) as ds:
             print(f"Computing {filepath} ...")
@@ -31,7 +32,7 @@ def monstd(start=1981, end=2010):
     return filepath
 
 
-def dayavg(year, month):
+def download_daily(year, month):
     """Download daily means for a single month."""
 
     # if file exists, return path
@@ -61,4 +62,4 @@ if __name__ == "__main__":
         os.makedirs('external')
 
     # compute monthly standard deviation
-    monstd()
+    compute_std()
