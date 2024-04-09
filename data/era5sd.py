@@ -15,7 +15,8 @@ def compute_std(start=1981, end=2010):
     """Compute multiyear monthly standard deviation of daily means."""
 
     # if file exists, return path
-    filepath = f'external/era5.t2m.monstd.{start%100:d}{end%100:d}.nc'
+    filepath = \
+        f'external/era5/clim/era5.t2m.day.monstd.{start%100:d}{end%100:d}.nc'
     if os.path.isfile(filepath):
         return filepath
 
@@ -36,7 +37,7 @@ def download_daily(year, month):
     """Download daily means for a single month."""
 
     # if file exists, return path
-    filepath = f'external/era5.t2m.day.{year:d}.{month:02d}.nc'
+    filepath = f'external/era5/daily/era5.t2m.day.{year:d}.{month:02d}.nc'
     if os.path.isfile(filepath):
         return filepath
 

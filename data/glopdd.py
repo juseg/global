@@ -56,7 +56,8 @@ def write_massbalance(source='chelsa', offset=0):
         return filepath
 
     # load era5 standard deviation
-    with xr.open_dataarray('external/era5.t2m.monstd.8110.nc') as era5:
+    with xr.open_dataarray(
+            'external/era5/clim/era5.t2m.day.monstd.8110.nc') as era5:
         era5 = era5.rename(month='time', lon='x', lat='y')
         era5 = era5.drop(['realization', 'time'])
 
