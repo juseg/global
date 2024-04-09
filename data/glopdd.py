@@ -87,7 +87,7 @@ def write_massbalance(source='chelsa', freq='day', offset=0):
 
     # compute pdd and melt in kg m-2
     teff = (stdv/2**0.5) * (np.exp(-norm**2)/np.pi**0.5 + norm*sc.erfc(-norm))
-    ddf = 3 / 0.910  # kg m-2 K-1 day-1 (~mm w.e. K-1 day-1)
+    ddf = 3  # kg m-2 K-1 day-1 (~mm w.e. K-1 day-1)
     pdd = teff * months
     melt = ddf * pdd  # kg m-2
 
@@ -95,6 +95,7 @@ def write_massbalance(source='chelsa', freq='day', offset=0):
     smb = (snow - melt).sum('time')
 
     # write output to disk
+    print(f"Computing {source} - {offset:g} global mass balance...")
     smb.astype('f4').to_dataset(name='smb').to_netcdf(
         filepath, encoding={'smb': {'zlib': True}})
 
