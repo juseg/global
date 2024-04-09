@@ -94,13 +94,8 @@ def write_massbalance(source='chelsa', freq='day', offset=0):
     # surface mass balance in kg m-2
     smb = (snow - melt).sum('time')
 
-    # write output to disk
-    print(f"Computing {source} - {offset:g} global mass balance...")
-    smb.astype('f4').to_dataset(name='smb').to_netcdf(
-        filepath, encoding={'smb': {'zlib': True}})
-
-    # return file path
-    return filepath
+    # return surface mass balance
+    return smb
 
 
 def write_glacial_inception_threshold(source='chelsa'):
@@ -113,9 +108,9 @@ def write_glacial_inception_threshold(source='chelsa'):
 
     # open (offset, x, y) surface mass balance array
     offset = xr.DataArray(range(12), dims=['offset'])
-    smb = xr.open_mfdataset(
+    smb = xr.concat(
         [write_massbalance(source=source, offset=dt) for dt in offset],
-        chunks={'y': 240}, combine='nested', concat_dim=offset).smb
+        dim=offset)
 
     # compute glacial inception threshold
     git = (smb > 0).idxmax(dim='offset').where(smb[-1] > 0).rename('git')
