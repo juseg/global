@@ -8,7 +8,7 @@
 import os
 import cdsapi
 import xarray as xr
-import dask.diagnostics
+import dask.distributed
 
 
 def compute_std(start=1981, end=2010):
@@ -23,8 +23,8 @@ def compute_std(start=1981, end=2010):
     # compute monthly standard deviation
     func = download_daily
     paths = [func(a, m) for m in range(1, 13) for a in range(start, end+1)]
-    with dask.diagnostics.ProgressBar():
-        with xr.open_mfdataset(paths) as ds:
+    with dask.distributed.Client():
+        with xr.open_mfdataset(paths, chunks={'latitude': 103}) as ds:
             print(f"Computing {filepath} ...")
             ds.groupby('time.month').std('time').to_netcdf(
                 filepath, encoding={'t2m': {'zlib': True}})
