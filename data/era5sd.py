@@ -56,6 +56,29 @@ def download_daily(year, month):
     return filepath
 
 
+def download_hourly(year, month):
+    """Download hourly means for a single month."""
+
+    # if file exists, return path
+    filepath = f'external/era5/daily/era5.t2m.hour.{year:d}.{month:02d}.nc'
+    if os.path.isfile(filepath):
+        return filepath
+
+    # else retrieve the file
+    client = cdsapi.Client()
+    client.retrieve(
+        'reanalysis-era5-single-levels', {
+            'product_type': 'reanalysis', 'format': 'netcdf',
+            'variable': '2m_temperature',
+            'year': f'{year:d}', 'month': f'{month:02d}',
+            'day': [f'{i:02d}' for i in range(1, 32)],
+            'time': [f'{i:02d}:00' for i in range(24)]},
+        filepath)
+
+    # return filepath
+    return filepath
+
+
 if __name__ == "__main__":
 
     # if missing, create directory
