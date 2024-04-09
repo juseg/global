@@ -11,17 +11,18 @@ import xarray as xr
 import dask.distributed
 
 
-def compute_std(start=1981, end=2010):
+def compute_std(freq='day', start=1981, end=2010):
     """Compute multiyear monthly standard deviation of daily means."""
 
     # if file exists, return path
-    filepath = \
-        f'external/era5/clim/era5.t2m.day.monstd.{start%100:d}{end%100:d}.nc'
+    filepath = (
+        'external/era5/clim/'
+        f'era5.t2m.{freq}.monstd.{start%100:d}{end%100:d}.nc')
     if os.path.isfile(filepath):
         return filepath
 
     # compute monthly standard deviation
-    func = download_daily
+    func = download_daily if freq == 'day' else download_hourly
     paths = [func(a, m) for m in range(1, 13) for a in range(start, end+1)]
     with dask.distributed.Client():
         with xr.open_mfdataset(paths, chunks={'latitude': 103}) as ds:
@@ -60,7 +61,7 @@ def download_hourly(year, month):
     """Download hourly means for a single month."""
 
     # if file exists, return path
-    filepath = f'external/era5/daily/era5.t2m.hour.{year:d}.{month:02d}.nc'
+    filepath = f'external/era5/hourly/era5.t2m.hour.{year:d}.{month:02d}.nc'
     if os.path.isfile(filepath):
         return filepath
 
@@ -81,9 +82,11 @@ def download_hourly(year, month):
 
 if __name__ == "__main__":
 
-    # if missing, create directory
-    if not os.path.exists('external'):
-        os.makedirs('external')
+    # if missing, create directories
+    os.makedirs('external/era5/clim', exist_ok=True)
+    os.makedirs('external/era5/daily', exist_ok=True)
+    os.makedirs('external/era5/hourly', exist_ok=True)
 
     # compute monthly standard deviation
-    compute_std()
+    compute_std(freq='day')
+    compute_std(freq='hour')
