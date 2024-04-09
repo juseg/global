@@ -75,14 +75,14 @@ def write_massbalance(source='chelsa', freq='day', offset=0):
         lambda array: era5.interp(x=array.x, y=array.y), template=atm.temp)
 
     # apply temperature offset
-    atm['temp'] -= offset
+    offset = xr.DataArray(range(12), coords=[range(12)], dims=['offset'])
 
     # convert precipitation from kg m-2 month-1 to kg m-2 a-1
     months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
     months = xr.DataArray(months, coords={'time': atm.time})
 
     # compute normalized temp and snow accumulation in kg m-2
-    norm = atm.temp / (2**0.5*stdv)
+    norm = (atm.temp-offset) / (2**0.5*stdv)
     snow = atm.prec * sc.erfc(norm) / 2
 
     # compute pdd and melt in kg m-2
@@ -93,6 +93,7 @@ def write_massbalance(source='chelsa', freq='day', offset=0):
 
     # surface mass balance in kg m-2
     smb = (snow - melt).sum('time')
+    smb = smb.transpose('offset', 'y', 'x')
 
     # return surface mass balance
     return smb
@@ -107,10 +108,7 @@ def write_glacial_inception_threshold(source='chelsa'):
         return filepath
 
     # open (offset, x, y) surface mass balance array
-    offset = xr.DataArray(range(12), dims=['offset'])
-    smb = xr.concat(
-        [write_massbalance(source=source, offset=dt) for dt in offset],
-        dim=offset)
+    smb = write_massbalance(source=source, offset=0)
 
     # compute glacial inception threshold
     git = (smb > 0).idxmax(dim='offset').where(smb[-1] > 0).rename('git')
