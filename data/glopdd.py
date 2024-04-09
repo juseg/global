@@ -47,7 +47,7 @@ def write_climatology(source='chelsa'):
     return filepath
 
 
-def write_massbalance(source='chelsa', offset=0):
+def write_massbalance(source='chelsa', freq='day', offset=0):
     """Write global mass balance to disk, return file path."""
 
     # if file exists, return path
@@ -56,9 +56,15 @@ def write_massbalance(source='chelsa', offset=0):
         return filepath
 
     # load era5 standard deviation
-    with xr.open_dataarray('external/era5.t2m.monstd.8110.nc') as era5:
-        era5 = era5.rename(month='time', lon='x', lat='y')
-        era5 = era5.drop(['realization', 'time'])
+    with xr.open_dataarray(
+            f'external/era5/clim/era5.t2m.{freq}.monstd.8110.nc') as era5:
+        if freq == 'day':
+            era5 = era5.rename(month='time', lon='x', lat='y')
+            era5 = era5.drop(['realization', 'time'])
+        else:
+            era5 = era5.rename(month='time', longitude='x', latitude='y')
+            era5['x'] = (era5.x + 180) % 360 - 180
+            era5 = era5.drop('time')
 
     # open climatology (y>=240 chunks use too much memory on polaris)
     atm = xr.open_dataset(write_climatology(source=source), chunks={'y': 60})
@@ -81,7 +87,7 @@ def write_massbalance(source='chelsa', offset=0):
 
     # compute pdd and melt in kg m-2
     teff = (stdv/2**0.5) * (np.exp(-norm**2)/np.pi**0.5 + norm*sc.erfc(-norm))
-    ddf = 3 / 0.910  # kg m-2 K-1 day-1 (~mm w.e. K-1 day-1)
+    ddf = 3  # kg m-2 K-1 day-1 (~mm w.e. K-1 day-1)
     pdd = teff * months
     melt = ddf * pdd  # kg m-2
 
@@ -89,6 +95,7 @@ def write_massbalance(source='chelsa', offset=0):
     smb = (snow - melt).sum('time')
 
     # write output to disk
+    print(f"Computing {source} - {offset:g} global mass balance...")
     smb.astype('f4').to_dataset(name='smb').to_netcdf(
         filepath, encoding={'smb': {'zlib': True}})
 
