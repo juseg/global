@@ -22,27 +22,18 @@ def write_climatology(source='chelsa'):
     if os.path.isfile(filepath):
         return filepath
 
-    # if missing, create directory
-    if not os.path.exists('processed'):
-        os.makedirs('processed')
-
     # open chelsa global climatology as a dataset
-    # FIXME could store as original (f4?) and cache
     atm = xr.Dataset({
         'prec': hyoga.open.reprojected._open_climatology(
             source=source, variable='pr'),
         'temp': hyoga.open.reprojected._open_climatology(
             source=source, variable='tas')})
 
-    # write to disk as a single file using threaded scheduler, as distributed
-    # scheduler overloads memory, unless we chunk in time and space, but that
-    # results in only one worker working at a time, probably because two
-    # workers can't read the same geotiff file at the same time.
-    delayed = atm.to_netcdf(filepath, compute=False, encoding={
-        name: {'zlib': True} for name in atm})
-    with dask.diagnostics.ProgressBar():
-        print(f"Writing {source} global climatology...")
-        delayed.compute()
+    # remove precision errors for more efficient compression
+    atm = atm.round(3).astype('f4')
+
+    # write to disk
+    atm.to_netcdf(filepath, encoding={name: {'zlib': True} for name in atm})
 
     # return file path
     return filepath
@@ -63,8 +54,11 @@ def open_climatology(source='chelsa', freq='day'):
             era5 = era5.drop('time')
 
     # open climatology (600x600 chunks raise memory warning on rigil)
-    atm = xr.open_dataset(
-        write_climatology(source=source), chunks={'x': 300, 'y': 300})
+    filepath = write_climatology(source=source)
+    atm = xr.open_dataset(filepath, chunks={'x': 300, 'y': 300})
+
+    # crop a small region for a test
+    # atm = atm.loc[{'x': slice(0, 30), 'y': slice(60, 30)}]
 
     # interpolate to temperature grid (interp loads all chunks by default
     # overloading the memory https://github.com/pydata/xarray/issues/6799)
