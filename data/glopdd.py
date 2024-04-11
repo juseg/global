@@ -27,6 +27,7 @@ def write_climatology(source='chelsa'):
         os.makedirs('processed')
 
     # open chelsa global climatology as a dataset
+    # FIXME could store as original (f4?) and cache
     atm = xr.Dataset({
         'prec': hyoga.open.reprojected._open_climatology(
             source=source, variable='pr'),
@@ -41,7 +42,7 @@ def write_climatology(source='chelsa'):
         name: {'zlib': True} for name in atm})
     with dask.diagnostics.ProgressBar():
         print(f"Writing {source} global climatology...")
-        delayed.compute(scheduler='threads')
+        delayed.compute()
 
     # return file path
     return filepath
@@ -61,8 +62,9 @@ def open_climatology(source='chelsa', freq='day'):
             era5['x'] = (era5.x + 180) % 360 - 180
             era5 = era5.drop('time')
 
-    # open climatology (y>=240 chunks use too much memory on polaris)
-    atm = xr.open_dataset(write_climatology(source=source), chunks={'y': 60})
+    # open climatology (600x600 chunks raise memory warning on rigil)
+    atm = xr.open_dataset(
+        write_climatology(source=source), chunks={'x': 300, 'y': 300})
 
     # interpolate to temperature grid (interp loads all chunks by default
     # overloading the memory https://github.com/pydata/xarray/issues/6799)
@@ -117,6 +119,9 @@ def compute_glacial_threshold(smb, source='chelsa'):
 
 def main(source='chelsa'):
     """Main program called during execution."""
+
+    # use dask distributed
+    dask.distributed.Client()
 
     # unless file exists
     filepath = f'processed/glopdd.git.{source}.nc'
