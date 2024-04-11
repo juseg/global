@@ -29,9 +29,6 @@ def write_climatology(source='chelsa'):
         'temp': hyoga.open.reprojected._open_climatology(
             source=source, variable='tas')})
 
-    # remove precision errors for more efficient compression
-    atm = atm.round(3).astype('f4')
-
     # write to disk
     atm.to_netcdf(filepath, encoding={name: {'zlib': True} for name in atm})
 
@@ -72,19 +69,16 @@ def open_climatology(source='chelsa', freq='day'):
 def compute_mass_balance(temp, prec, stdv):
     """Compute mass balance from climatology."""
 
-    # FIXME temporary fix
-    atm = xr.Dataset({'prec': prec, 'temp': temp})
-
     # apply temperature offset
-    offset = xr.DataArray(range(12), coords=[range(12)], dims=['offset'])
+    temp = temp - xr.DataArray(range(12), coords=[range(12)], dims=['offset'])
 
     # convert precipitation from kg m-2 month-1 to kg m-2 a-1
     months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
-    months = xr.DataArray(months, coords={'time': atm.time})
+    months = xr.DataArray(months, coords={'time': temp.time})
 
     # compute normalized temp and snow accumulation in kg m-2
-    norm = (atm.temp-offset) / (2**0.5*stdv)
-    snow = atm.prec * sc.erfc(norm) / 2
+    norm = temp / (2**0.5*stdv)
+    snow = prec * sc.erfc(norm) / 2
 
     # compute pdd and melt in kg m-2
     teff = (stdv/2**0.5) * (np.exp(-norm**2)/np.pi**0.5 + norm*sc.erfc(-norm))
@@ -116,6 +110,9 @@ def main(source='chelsa'):
 
     # use dask distributed
     dask.distributed.Client()
+
+    # create directory if missing
+    os.makedirs('processed', exist_ok=True)
 
     # unless file exists
     filepath = f'processed/glopdd.git.{source}.nc'
