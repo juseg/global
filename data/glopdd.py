@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright (c) 2023, Julien Seguinot (juseg.dev)
+# Copyright (c) 2023-2024, Julien Seguinot (juseg.dev)
 # Creative Commons Attribution-ShareAlike 4.0 International License
 # (CC BY-SA 4.0, http://creativecommons.org/licenses/by-sa/4.0/)
 
@@ -22,10 +22,6 @@ def write_climatology(source='chelsa'):
     if os.path.isfile(filepath):
         return filepath
 
-    # if missing, create directory
-    if not os.path.exists('processed'):
-        os.makedirs('processed')
-
     # open chelsa global climatology as a dataset
     atm = xr.Dataset({
         'prec': hyoga.open.reprojected._open_climatology(
@@ -33,27 +29,15 @@ def write_climatology(source='chelsa'):
         'temp': hyoga.open.reprojected._open_climatology(
             source=source, variable='tas')})
 
-    # write to disk as a single file using threaded scheduler, as distributed
-    # scheduler overloads memory, unless we chunk in time and space, but that
-    # results in only one worker working at a time, probably because two
-    # workers can't read the same geotiff file at the same time.
-    delayed = atm.to_netcdf(filepath, compute=False, encoding={
-        name: {'zlib': True} for name in atm})
-    with dask.diagnostics.ProgressBar():
-        print(f"Writing {source} global climatology...")
-        delayed.compute(scheduler='threads')
+    # write to disk
+    atm.to_netcdf(filepath, encoding={name: {'zlib': True} for name in atm})
 
     # return file path
     return filepath
 
 
-def write_massbalance(source='chelsa', freq='day', offset=0):
+def open_climatology(source='chelsa', freq='day'):
     """Write global mass balance to disk, return file path."""
-
-    # if file exists, return path
-    filepath = f'processed/glopdd.smb.{source}.{offset*100:04d}.nc'
-    if os.path.isfile(filepath):
-        return filepath
 
     # load era5 standard deviation
     with xr.open_dataarray(
@@ -66,24 +50,35 @@ def write_massbalance(source='chelsa', freq='day', offset=0):
             era5['x'] = (era5.x + 180) % 360 - 180
             era5 = era5.drop('time')
 
-    # open climatology (y>=240 chunks use too much memory on polaris)
-    atm = xr.open_dataset(write_climatology(source=source), chunks={'y': 60})
+    # open climatology (600x600 chunks raise memory warning on rigil)
+    filepath = write_climatology(source=source)
+    atm = xr.open_dataset(filepath, chunks={'x': 300, 'y': 300})
+
+    # crop a small region for a test
+    # atm = atm.loc[{'x': slice(0, 30), 'y': slice(60, 30)}]
 
     # interpolate to temperature grid (interp loads all chunks by default
     # overloading the memory https://github.com/pydata/xarray/issues/6799)
     stdv = atm.temp.map_blocks(
         lambda array: era5.interp(x=array.x, y=array.y), template=atm.temp)
 
+    # return temperature, precipitation, standard deviation
+    return atm.temp, atm.prec, stdv
+
+
+def compute_mass_balance(temp, prec, stdv):
+    """Compute mass balance from climatology."""
+
     # apply temperature offset
-    atm['temp'] -= offset
+    temp = temp - xr.DataArray(range(12), coords=[range(12)], dims=['offset'])
 
     # convert precipitation from kg m-2 month-1 to kg m-2 a-1
     months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
-    months = xr.DataArray(months, coords={'time': atm.time})
+    months = xr.DataArray(months, coords={'time': temp.time})
 
     # compute normalized temp and snow accumulation in kg m-2
-    norm = atm.temp / (2**0.5*stdv)
-    snow = atm.prec * sc.erfc(norm) / 2
+    norm = temp / (2**0.5*stdv)
+    snow = prec * sc.erfc(norm) / 2
 
     # compute pdd and melt in kg m-2
     teff = (stdv/2**0.5) * (np.exp(-norm**2)/np.pi**0.5 + norm*sc.erfc(-norm))
@@ -93,44 +88,47 @@ def write_massbalance(source='chelsa', freq='day', offset=0):
 
     # surface mass balance in kg m-2
     smb = (snow - melt).sum('time')
+    smb = smb.transpose('offset', 'y', 'x')
 
-    # write output to disk
-    print(f"Computing {source} - {offset:g} global mass balance...")
-    smb.astype('f4').to_dataset(name='smb').to_netcdf(
-        filepath, encoding={'smb': {'zlib': True}})
-
-    # return file path
-    return filepath
+    # return surface mass balance
+    return smb
 
 
-def write_glacial_inception_threshold(source='chelsa'):
-    """Compute glacial inception threshold from mass balance."""
+def compute_glacial_threshold(smb, source='chelsa'):
+    """Compute glacial inception threshold from surface mass balance."""
 
-    # if file exists, return path
-    filepath = f'processed/glopdd.git.{source}.nc'
-    if os.path.isfile(filepath):
-        return filepath
-
-    # open (offset, x, y) surface mass balance array
-    offset = xr.DataArray(range(12), dims=['offset'])
-    smb = xr.open_mfdataset(
-        [write_massbalance(source=source, offset=dt) for dt in offset],
-        chunks={'y': 240}, combine='nested', concat_dim=offset).smb
-
-    # compute glacial inception threshold
-    git = (smb > 0).idxmax(dim='offset').where(smb[-1] > 0).rename('git')
+    # use argmax because idxmax triggers rechunking
+    git = (smb > 0).argmax(dim='offset').where(smb[-1] > 0).rename('git')
     git.attrs.update(long_name='glacial inception threshold', units='K')
-    delayed = git.astype('f4').to_netcdf(
-        filepath, compute=False, encoding={'git': {'zlib': True}})
-    print(f"Writing {source} glacial inception threshold...")
-    delayed.compute(rerun_exceptions_locally=True)
 
-    # re-open output and save copy as geotiff
-    git = xr.open_dataarray(filepath, chunks={'y': 240})
-    git.rio.to_raster(filepath[:-3]+'.tif', compress='LZW', tiled=True)
-    return filepath
+    # return glacial inception threshold
+    return git
+
+
+def main(source='chelsa'):
+    """Main program called during execution."""
+
+    # use dask distributed
+    dask.distributed.Client()
+
+    # create directory if missing
+    os.makedirs('processed', exist_ok=True)
+
+    # unless file exists
+    filepath = f'processed/glopdd.git.{source}.nc'
+    if not os.path.isfile(filepath):
+        print(f"Writing {source} glacial inception threshold...")
+
+        # compute glacial threshold
+        temp, prec, stdv = open_climatology(source='chelsa')
+        smb = compute_mass_balance(temp, prec, stdv)
+        git = compute_glacial_threshold(smb)
+        git.astype('f4').to_netcdf(filepath, encoding={'git': {'zlib': True}})
+
+        # reopen and save tiled geotiff
+        git = xr.open_dataarray(filepath, chunks={'y': 240})
+        git.rio.to_raster(filepath[:-3]+'.tif', compress='LZW', tiled=True)
 
 
 if __name__ == '__main__':
-    dask.distributed.Client()
-    write_glacial_inception_threshold(source='chelsa')
+    main()
