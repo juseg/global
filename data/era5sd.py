@@ -32,12 +32,11 @@ def compute_avg(var='t2m', start=1981, end=2010):
 
 
 def compute_std(freq='day', start=1981, end=2010):
-    """Compute multiyear monthly standard deviation of daily means."""
+    """Compute multiyear monthly standard deviation from frequency."""
 
     # if file exists, return path
     filepath = (
-        'external/era5/clim/'
-        f'era5.t2m.{freq}.monstd.{start%100:d}{end%100:d}.nc')
+        f'external/era5/clim/era5.t2m.{freq}.{start%100:d}{end%100:d}.std.nc')
     if os.path.isfile(filepath):
         return filepath
 
