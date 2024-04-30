@@ -1,9 +1,9 @@
 #!/usr/bin/python
-# Copyright (c) 2023, Julien Seguinot (juseg.dev)
+# Copyright (c) 2023-2024, Julien Seguinot (juseg.dev)
 # Creative Commons Attribution-ShareAlike 4.0 International License
 # (CC BY-SA 4.0, http://creativecommons.org/licenses/by-sa/4.0/)
 
-"""Compute ERA5 monthly standard deviation of daily mean temperature."""
+"""Compute ERA5 long-term monthly aggregates."""
 
 import os
 import cdsapi
@@ -80,12 +80,34 @@ def download_hourly(year, month):
     return filepath
 
 
+def download_monthly(year, var='t2m'):
+    """Download monthly means for a single month."""
+
+    # if file exists, return path
+    filepath = f'external/era5/monthly/era5.{var}.mon.{year:d}.nc'
+    if os.path.isfile(filepath):
+        return filepath
+
+    # variable name in CDS
+    variable = {'t2m': '2m_temperature', 'tp': 'total_precipitation'}[var]
+
+    # request download from CDS
+    print(f"Downloading {filepath} ...")
+    client = cdsapi.Client()
+    client.retrieve('reanalysis-era5-single-levels-monthly-means', {
+        'format': 'netcdf', 'month': [f'{i}' for i in range(1, 13)],
+        'product_type': 'monthly_averaged_reanalysis', 'time': '00:00',
+        'variable': variable, 'year': f'{year:d}'}, filepath)
+    return filepath
+
+
 if __name__ == "__main__":
 
     # if missing, create directories
     os.makedirs('external/era5/clim', exist_ok=True)
     os.makedirs('external/era5/daily', exist_ok=True)
     os.makedirs('external/era5/hourly', exist_ok=True)
+    os.makedirs('external/era5/monthly', exist_ok=True)
 
     # compute monthly standard deviation
     compute_std(freq='day')
