@@ -11,6 +11,26 @@ import xarray as xr
 import dask.distributed
 
 
+def compute_avg(var='t2m', start=1981, end=2010):
+    """Compute multiyear monthly averages from monthly means."""
+
+    # if file exists, return path
+    filepath = \
+        f'external/era5/clim/era5.{var}.mon.{start%100:d}{end%100:d}.avg.nc'
+    if os.path.isfile(filepath):
+        return filepath
+
+    # compute monthly mean
+    print(f"Computing {filepath} ...")
+    paths = [download_monthly(year, var=var) for year in range(start, end+1)]
+    with xr.open_mfdataset(paths) as ds:
+        ds.groupby('time.month').mean().to_netcdf(
+            filepath, encoding={var: {'zlib': True}})
+
+    # return file path
+    return filepath
+
+
 def compute_std(freq='day', start=1981, end=2010):
     """Compute multiyear monthly standard deviation of daily means."""
 
@@ -110,5 +130,7 @@ if __name__ == "__main__":
     os.makedirs('external/era5/monthly', exist_ok=True)
 
     # compute monthly standard deviation
+    compute_avg(var='t2m')
+    compute_avg(var='tp')
     compute_std(freq='day')
     compute_std(freq='hour')
