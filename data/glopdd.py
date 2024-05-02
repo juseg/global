@@ -152,12 +152,22 @@ def download_era5_monthly(year, var='t2m'):
 # Compute main outputs
 # --------------------
 
-def open_climatology(source='chelsa', freq='day'):
-    """Write global mass balance to disk, return file path."""
+def open_climatology(source='cera5', freq='day'):
+    """Open temp, prec, stdv climatology on a consistent grid."""
+
+    # open climatology (600x600 chunks raise memory warning on rigil)
+    chunks = {'x': 300, 'y': 300}
+    filepath = f'external/{source}/clim/{source}.{{var}}.mon.8110.avg.nc'
+    temp = xr.open_dataset(filepath.format(var='tas'), chunks=chunks).tas
+    prec = xr.open_dataset(filepath.format(var='pr'), chunks=chunks).pr
+
+    # crop a small region for a test
+    # temp = temp.sel(x=slice(5, 10), y=slice(48, 43))
+    # prec = prec.sel(x=slice(5, 10), y=slice(48, 43))
 
     # load era5 standard deviation
     with xr.open_dataarray(
-            f'external/era5/clim/era5.t2m.{freq}.monstd.8110.nc') as era5:
+            f'external/era5/clim/era5.t2m.{freq}.8110.std.nc') as era5:
         if freq == 'day':
             era5 = era5.rename(month='time', lon='x', lat='y')
             era5 = era5.drop(['realization', 'time'])
@@ -166,20 +176,13 @@ def open_climatology(source='chelsa', freq='day'):
             era5['x'] = (era5.x + 180) % 360 - 180
             era5 = era5.drop('time')
 
-    # open climatology (600x600 chunks raise memory warning on rigil)
-    filepath = write_climatology(source=source)
-    atm = xr.open_dataset(filepath, chunks={'x': 300, 'y': 300})
-
-    # crop a small region for a test
-    # atm = atm.loc[{'x': slice(0, 30), 'y': slice(60, 30)}]
-
     # interpolate to temperature grid (interp loads all chunks by default
     # overloading the memory https://github.com/pydata/xarray/issues/6799)
-    stdv = atm.temp.map_blocks(
-        lambda array: era5.interp(x=array.x, y=array.y), template=atm.temp)
+    stdv = temp.map_blocks(
+        lambda array: era5.interp(x=array.x, y=array.y), template=temp)
 
     # return temperature, precipitation, standard deviation
-    return atm.temp, atm.prec, stdv
+    return temp, prec, stdv
 
 
 def compute_mass_balance(temp, prec, stdv):
@@ -224,7 +227,7 @@ def compute_glacial_threshold(smb, source='chelsa'):
 # Main program
 # ------------
 
-def main(source='chelsa'):
+def main(source='cera5'):
     """Main program called during execution."""
 
     # use dask distributed
@@ -239,6 +242,8 @@ def main(source='chelsa'):
     os.makedirs('processed', exist_ok=True)
 
     # compute climatologies
+    aggregate_cera5(var='tas')
+    aggregate_cera5(var='pr')
     aggregate_era5_avg(var='t2m')
     aggregate_era5_avg(var='tp')
     aggregate_era5_std(freq='day')
@@ -250,7 +255,7 @@ def main(source='chelsa'):
         print(f"Writing {source} glacial inception threshold...")
 
         # compute glacial threshold
-        temp, prec, stdv = open_climatology(source='chelsa')
+        temp, prec, stdv = open_climatology(source=source)
         smb = compute_mass_balance(temp, prec, stdv)
         git = compute_glacial_threshold(smb)
         git.astype('f4').to_netcdf(filepath, encoding={'git': {'zlib': True}})
