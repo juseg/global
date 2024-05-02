@@ -152,14 +152,22 @@ def download_era5_monthly(year, var='t2m'):
 # Compute main outputs
 # --------------------
 
-def open_climatology(source='cera5', freq='day'):
+def open_climatology(source='era5', freq='day'):
     """Open temp, prec, stdv climatology on a consistent grid."""
 
     # open climatology (600x600 chunks raise memory warning on rigil)
-    chunks = {'x': 300, 'y': 300}
-    filepath = f'external/{source}/clim/{source}.{{var}}.mon.8110.avg.nc'
-    temp = xr.open_dataset(filepath.format(var='tas'), chunks=chunks).tas
-    prec = xr.open_dataset(filepath.format(var='pr'), chunks=chunks).pr
+    shortnames = {'cera5': ('tas', 'pr'), 'era5': ('t2m', 'tp')}[source]
+    temp, prec = (xr.open_dataset(
+        f'external/{source}/clim/{source}.{var}.mon.8110.avg.nc',
+        chunks={'x': 300, 'y': 300})[var] for var in shortnames)
+
+    # homogenize coordinate names to cera5 data
+    # FIXME default to era5 (month, longitude, latitude) or cw5e5 (lat, lon)
+    if source == 'era5':
+        temp = temp.rename(month='time', longitude='x', latitude='y')
+        prec = prec.rename(month='time', longitude='x', latitude='y')
+        temp = temp.drop('time')
+        prec = prec.drop('time')
 
     # crop a small region for a test
     # temp = temp.sel(x=slice(5, 10), y=slice(48, 43))
@@ -178,6 +186,7 @@ def open_climatology(source='cera5', freq='day'):
 
     # interpolate to temperature grid (interp loads all chunks by default
     # overloading the memory https://github.com/pydata/xarray/issues/6799)
+    # FIXME: could perhaps use interp_like if coordinates are consistent?
     stdv = temp.map_blocks(
         lambda array: era5.interp(x=array.x, y=array.y), template=temp)
 
@@ -188,12 +197,29 @@ def open_climatology(source='cera5', freq='day'):
 def compute_mass_balance(temp, prec, stdv):
     """Compute mass balance from climatology."""
 
-    # apply temperature offset
-    temp = temp - xr.DataArray(range(12), coords=[range(12)], dims=['offset'])
-
-    # convert precipitation from kg m-2 month-1 to kg m-2 a-1
+    # number of days per months to convert precip and compute pdd
     months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
     months = xr.DataArray(months, coords={'time': temp.time})
+
+    # convert temperature to degC
+    if 'units' not in temp.attrs:
+        temp = temp.assign_attrs(units='degC')  # CHELSA-ERA5
+    elif temp.units == 'K':
+        temp = temp.assign_attrs(units='degC') - 273.15
+    else:
+        raise ValueError(f'Unknown temperature units {temp.units}.')
+
+    # convert precipitation to kg m-2
+    if 'units' not in prec.attrs:
+        prec = prec.assign_attrs(units='kg m-2')  # CHELSA-ERA5
+    elif prec.units == 'm':
+        # FIXME unit 'm' specific to ERA5 is a monthly average of daily totals
+        prec = prec.assign_attrs(units='kg m-2') * 1e3 * months
+    else:
+        raise ValueError(f'Unknown precipitation units {prec.units}.')
+
+    # apply temperature offset
+    temp = temp - xr.DataArray(range(12), coords=[range(12)], dims=['offset'])
 
     # compute normalized temp and snow accumulation in kg m-2
     norm = temp / (2**0.5*stdv)
@@ -227,13 +253,14 @@ def compute_glacial_threshold(smb, source='chelsa'):
 # Main program
 # ------------
 
-def main(source='cera5'):
+def main(source='era5'):
     """Main program called during execution."""
 
     # use dask distributed
     dask.distributed.Client()
 
     # create directories if missing
+    # FIXME only create as needed
     os.makedirs('external/era5/clim', exist_ok=True)
     os.makedirs('external/era5/daily', exist_ok=True)
     os.makedirs('external/era5/hourly', exist_ok=True)
@@ -242,6 +269,7 @@ def main(source='cera5'):
     os.makedirs('processed', exist_ok=True)
 
     # compute climatologies
+    # FIXME only compute as needed
     aggregate_cera5(var='tas')
     aggregate_cera5(var='pr')
     aggregate_era5_avg(var='t2m')
