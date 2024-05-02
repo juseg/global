@@ -17,23 +17,20 @@ import hyoga
 # Aggregate climatologies
 # -----------------------
 
-def write_climatology(source='chelsa'):
-    """Write global climatology to disk, return file path."""
+def aggregate_cera5(var='tas'):
+    """Convert CHELSA-ERA5 geotiff to netcdf for efficient chunking."""
+    # FIXME: eventually we may want to recompute the climatologies to fit
+    # a custom subinterval of 1980-2019 instead of the default 1981-2010.
 
     # if file exists, return path
-    filepath = f'processed/glopdd.atm.{source}.nc'
+    filepath = f'external/cera5/clim/cera5.{var}.mon.8110.avg.nc'
     if os.path.isfile(filepath):
         return filepath
 
-    # open chelsa global climatology as a dataset
-    atm = xr.Dataset({
-        'prec': hyoga.open.reprojected._open_climatology(
-            source=source, variable='pr'),
-        'temp': hyoga.open.reprojected._open_climatology(
-            source=source, variable='tas')})
-
-    # write to disk
-    atm.to_netcdf(filepath, encoding={name: {'zlib': True} for name in atm})
+    # convert climatology
+    hyoga.open.reprojected._open_climatology(
+        source='chelsa', variable=var).to_dataset(name=var).to_netcdf(
+            filepath, encoding={var: {'zlib': True}})
 
     # return file path
     return filepath
