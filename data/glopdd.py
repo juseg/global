@@ -166,6 +166,8 @@ def open_climatology(source='era5', freq='day'):
     if source == 'era5':
         temp = temp.rename(month='time', longitude='x', latitude='y')
         prec = prec.rename(month='time', longitude='x', latitude='y')
+        temp['x'] = (temp.x + 180) % 360 - 180
+        prec['x'] = (prec.x + 180) % 360 - 180
         temp = temp.drop('time')
         prec = prec.drop('time')
 
