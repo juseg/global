@@ -262,7 +262,8 @@ def main(source='era5'):
     """Main program called during execution."""
 
     # use dask distributed
-    dask.distributed.Client()
+    if source != 'era5':
+        dask.distributed.Client()
 
     # create directories if missing
     # FIXME only create as needed
