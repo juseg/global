@@ -189,8 +189,11 @@ def open_climatology(source='era5', freq='day'):
     # interpolate to temperature grid (interp loads all chunks by default
     # overloading the memory https://github.com/pydata/xarray/issues/6799)
     # FIXME: could perhaps use interp_like if coordinates are consistent?
-    stdv = temp.map_blocks(
-        lambda array: era5.interp(x=array.x, y=array.y), template=temp)
+    if source == 'era5':
+        stdv = era5.chunk({'x': 300, 'y': 300})
+    else:
+        stdv = temp.map_blocks(
+            lambda array: era5.interp(x=array.x, y=array.y), template=temp)
 
     # return temperature, precipitation, standard deviation
     return temp, prec, stdv
