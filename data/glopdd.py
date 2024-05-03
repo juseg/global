@@ -6,6 +6,7 @@
 """Compute glacial inception threshold from global climatologies."""
 
 import os.path
+import urllib.request
 import cdsapi
 import dask.distributed
 import numpy as np
@@ -81,6 +82,30 @@ def aggregate_era5_std(freq='day', start=1981, end=2010):
 
 # Download weather data
 # ---------------------
+
+def download_cw5e5_daily(year, month, var='tas', res='300arcsec'):
+    """Download daily means for a single month."""
+    # NOTE: these files will be useful in hyoga
+    # - chelsa/w5e5v1.0_obsclim_mask_30arcsec_global.nc
+    # - chelsa/w5e5v1.0_obsclim_orog_30arcsec_global.nc
+
+    # filepath
+    filename = (
+        f'chelsa-w5e5_obsclim_'
+        f'{var}_{res}_global_daily_{year:04d}{month:02d}.nc')
+    filepath = f'external/cw5e5/daily/{filename}'
+
+    # download if missing
+    if not os.path.isfile(filepath):
+        print(f"Downloading {filepath} ...")
+        urllib.request.urlretrieve(
+            f'https://files.isimip.org/ISIMIP3a/InputData/climate/atmosphere/'
+            f'obsclim/global/daily/historical/CHELSA-W5E5/{filename}',
+            filepath)
+
+    # return filepath
+    return filepath
+
 
 def download_era5_daily(year, month):
     """Download ERA5 daily means for a single month."""
@@ -267,11 +292,13 @@ def main(source='era5'):
 
     # create directories if missing
     # FIXME only create as needed
+    os.makedirs('external/cera5/clim', exist_ok=True)
+    os.makedirs('external/cw5e5/clim', exist_ok=True)
+    os.makedirs('external/cw5e5/daily', exist_ok=True)
     os.makedirs('external/era5/clim', exist_ok=True)
     os.makedirs('external/era5/daily', exist_ok=True)
     os.makedirs('external/era5/hourly', exist_ok=True)
     os.makedirs('external/era5/monthly', exist_ok=True)
-    os.makedirs('external/chelsa/era5/clim', exist_ok=True)
     os.makedirs('processed', exist_ok=True)
 
     # compute climatologies
