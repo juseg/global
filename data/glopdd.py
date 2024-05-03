@@ -5,7 +5,10 @@
 
 """Compute glacial inception threshold from global climatologies."""
 
+import hashlib
+import json
 import os.path
+import urllib.request
 import cdsapi
 import dask.distributed
 import numpy as np
@@ -31,6 +34,29 @@ def aggregate_cera5(var='tas'):
     hyoga.open.reprojected._open_climatology(
         source='chelsa', variable=var).to_dataset(name=var).to_netcdf(
             filepath, encoding={var: {'zlib': True}})
+
+    # return file path
+    return filepath
+
+
+def aggregate_cw5e5(month, var='tas', func='avg', start=1981, end=2010):
+    """Compute multiyear monthly aggregate from daily means."""
+
+    # if file exists, return path
+    filepath = (
+        'external/cw5e5/clim/cw5e5.'
+        f'{var}.day.{start%100:02d}{end%100:02d}.{func}.{month:02d}.nc')
+    if os.path.isfile(filepath):
+        return filepath
+
+    # compute multiyear statistic
+    # FIXME implement avg of monthly precip sum
+    paths = [
+        download_cw5e5_daily(year, month, var) for year in range(start, end+1)]
+    print(f"Computing {filepath} ...")
+    with xr.open_mfdataset(paths, chunks={'lat': 300, 'lon': 300}) as ds:
+        ds = getattr(ds, func.replace('avg', 'mean'))('time', keep_attrs=True)
+        ds.to_netcdf(filepath, encoding={var: {'zlib': True}})
 
     # return file path
     return filepath
@@ -81,6 +107,38 @@ def aggregate_era5_std(freq='day', start=1981, end=2010):
 
 # Download weather data
 # ---------------------
+
+def download_cw5e5_daily(year, month, var='tas', res='300arcsec'):
+    """Download daily means for a single month."""
+    # NOTE: these files will be useful in hyoga
+    # - chelsa/w5e5v1.0_obsclim_mask_30arcsec_global.nc
+    # - chelsa/w5e5v1.0_obsclim_orog_30arcsec_global.nc
+
+    # online url and local file path
+    basename = \
+        f'chelsa-w5e5_obsclim_{var}_{res}_global_daily_{year:d}{month:02d}'
+    url = \
+        f'https://files.isimip.org/ISIMIP3a/InputData/climate/atmosphere/' \
+        f'obsclim/global/daily/historical/CHELSA-W5E5/{basename}'
+    path = f'external/cw5e5/daily/{basename}'
+
+    # download if missing
+    for ext in ('.json', '.nc'):
+        if not os.path.isfile(path+ext):
+            print(f"Downloading {path+ext} ...")
+            urllib.request.urlretrieve(url+ext, path+ext)
+
+    # verify downloaded files
+    print(f"Checking {path}.nc ...")
+    with open(path+'.json', 'rb') as file:
+        provided = json.load(file)['checksum']
+    with open(path+'.nc', 'rb') as file:
+        computed = hashlib.sha512(file.read()).hexdigest()
+    assert computed == provided
+
+    # return filepath
+    return path + '.nc'
+
 
 def download_era5_daily(year, month):
     """Download ERA5 daily means for a single month."""
@@ -156,10 +214,17 @@ def open_climatology(source='era5', freq='day'):
     """Open temp, prec, stdv climatology on a consistent grid."""
 
     # open climatology (600x600 chunks raise memory warning on rigil)
-    shortnames = {'cera5': ('tas', 'pr'), 'era5': ('t2m', 'tp')}[source]
-    temp, prec = (xr.open_dataset(
-        f'external/{source}/clim/{source}.{var}.mon.8110.avg.nc',
-        chunks={'x': 300, 'y': 300})[var] for var in shortnames)
+    shortnames = ('t2m', 'tp') if source == 'era5' else ('tas', 'pr')
+    if source == 'cw5e5':
+        # FIXME combine cw5e5 data in preprocessing?
+        temp, prec = (xr.open_mfdataset(
+            f'external/{source}/clim/{source}.{var}.day.8110.avg.??.nc',
+            concat_dim='time', combine='nested',
+            chunks={'x': 300, 'y': 300})[var] for var in shortnames)
+    else:
+        temp, prec = (xr.open_dataset(
+            f'external/{source}/clim/{source}.{var}.mon.8110.avg.nc',
+            chunks={'x': 300, 'y': 300})[var] for var in shortnames)
 
     # homogenize coordinate names to cera5 data
     # FIXME default to era5 (month, longitude, latitude) or cw5e5 (lat, lon)
@@ -170,12 +235,16 @@ def open_climatology(source='era5', freq='day'):
         prec['x'] = (prec.x + 180) % 360 - 180
         temp = temp.drop('time')
         prec = prec.drop('time')
+    elif source == 'cw5e5':
+        temp = temp.rename(lon='x', lat='y')
+        prec = prec.rename(lon='x', lat='y')
 
     # crop a small region for a test
     # temp = temp.sel(x=slice(5, 10), y=slice(48, 43))
     # prec = prec.sel(x=slice(5, 10), y=slice(48, 43))
 
     # load era5 standard deviation
+    # FIXME also use cw5e5 standard deviation
     with xr.open_dataarray(
             f'external/era5/clim/era5.t2m.{freq}.8110.std.nc') as era5:
         if freq == 'day':
@@ -217,6 +286,9 @@ def compute_mass_balance(temp, prec, stdv):
     # convert precipitation to kg m-2
     if 'units' not in prec.attrs:
         prec = prec.assign_attrs(units='kg m-2')  # CHELSA-ERA5
+    elif prec.units == 'kg m-2 s-1':
+        # FIXME unit 'm' specific to ERA5 is a monthly average of daily totals
+        prec = prec.assign_attrs(units='kg m-2') * 3600 * 24 * months
     elif prec.units == 'm':
         # FIXME unit 'm' specific to ERA5 is a monthly average of daily totals
         prec = prec.assign_attrs(units='kg m-2') * 1e3 * months
@@ -262,16 +334,18 @@ def main(source='era5'):
     """Main program called during execution."""
 
     # use dask distributed
-    if source != 'era5':
+    if source == 'cera5':
         dask.distributed.Client()
 
     # create directories if missing
     # FIXME only create as needed
+    os.makedirs('external/cera5/clim', exist_ok=True)
+    os.makedirs('external/cw5e5/clim', exist_ok=True)
+    os.makedirs('external/cw5e5/daily', exist_ok=True)
     os.makedirs('external/era5/clim', exist_ok=True)
     os.makedirs('external/era5/daily', exist_ok=True)
     os.makedirs('external/era5/hourly', exist_ok=True)
     os.makedirs('external/era5/monthly', exist_ok=True)
-    os.makedirs('external/chelsa/era5/clim', exist_ok=True)
     os.makedirs('processed', exist_ok=True)
 
     # compute climatologies
@@ -282,6 +356,14 @@ def main(source='era5'):
     aggregate_era5_avg(var='tp')
     aggregate_era5_std(freq='day')
     aggregate_era5_std(freq='hour')
+    for month in range(1, 13):
+        aggregate_cw5e5(month, var='tas', func='avg')
+        aggregate_cw5e5(month, var='tas', func='std')
+        aggregate_cw5e5(month, var='pr', func='avg')
+
+    # use dask distributed
+    if source == 'cw5e5':
+        dask.distributed.Client()
 
     # unless file exists
     filepath = f'processed/glopdd.git.{source}.nc'
