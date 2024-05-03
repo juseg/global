@@ -39,6 +39,29 @@ def aggregate_cera5(var='tas'):
     return filepath
 
 
+def aggregate_cw5e5(month, var='tas', func='avg', start=1981, end=2010):
+    """Compute multiyear monthly aggregate from daily means."""
+
+    # if file exists, return path
+    filepath = (
+        'external/cw5e5/clim/cw5e5.'
+        f'{var}.day.{start%100:02d}{end%100:02d}.{func}.{month:02d}.nc')
+    if os.path.isfile(filepath):
+        return filepath
+
+    # compute multiyear statistic
+    # FIXME implement avg of monthly precip sum
+    paths = [
+        download_cw5e5_daily(year, month, var) for year in range(start, end+1)]
+    print(f"Computing {filepath} ...")
+    with xr.open_mfdataset(paths, chunks={'lat': 300, 'lon': 300}) as ds:
+        getattr(ds, func.replace('avg', 'mean'))('time').to_netcdf(
+            filepath, encoding={var: {'zlib': True}})
+
+    # return file path
+    return filepath
+
+
 def aggregate_era5_avg(var='t2m', start=1981, end=2010):
     """Compute ERA5 multiyear monthly averages from monthly means."""
 
