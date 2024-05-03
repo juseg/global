@@ -286,6 +286,9 @@ def compute_mass_balance(temp, prec, stdv):
     # convert precipitation to kg m-2
     if 'units' not in prec.attrs:
         prec = prec.assign_attrs(units='kg m-2')  # CHELSA-ERA5
+    elif prec.units == 'kg m-2 s-1':
+        # FIXME unit 'm' specific to ERA5 is a monthly average of daily totals
+        prec = prec.assign_attrs(units='kg m-2') * 3600 * 24 * months
     elif prec.units == 'm':
         # FIXME unit 'm' specific to ERA5 is a monthly average of daily totals
         prec = prec.assign_attrs(units='kg m-2') * 1e3 * months
