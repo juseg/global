@@ -5,6 +5,8 @@
 
 """Compute glacial inception threshold from global climatologies."""
 
+import hashlib
+import json
 import os.path
 import urllib.request
 import cdsapi
@@ -103,8 +105,16 @@ def download_cw5e5_daily(year, month, var='tas', res='300arcsec'):
             print(f"Downloading {path+ext} ...")
             urllib.request.urlretrieve(url+ext, path+ext)
 
+    # verify downloaded files
+    print(f"Checking {path}.nc ...")
+    with open(path+'.json', 'rb') as file:
+        provided = json.load(file)['checksum']
+    with open(path+'.nc', 'rb') as file:
+        computed = hashlib.sha512(file.read()).hexdigest()
+    assert computed == provided
+
     # return filepath
-    return f'{path}.{ext}'
+    return path + '.nc'
 
 
 def download_era5_daily(year, month):
