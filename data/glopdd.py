@@ -89,22 +89,22 @@ def download_cw5e5_daily(year, month, var='tas', res='300arcsec'):
     # - chelsa/w5e5v1.0_obsclim_mask_30arcsec_global.nc
     # - chelsa/w5e5v1.0_obsclim_orog_30arcsec_global.nc
 
-    # filepath
-    filename = (
-        f'chelsa-w5e5_obsclim_'
-        f'{var}_{res}_global_daily_{year:04d}{month:02d}.nc')
-    filepath = f'external/cw5e5/daily/{filename}'
+    # online url and local file path
+    basename = \
+        f'chelsa-w5e5_obsclim_{var}_{res}_global_daily_{year:d}{month:02d}'
+    url = \
+        f'https://files.isimip.org/ISIMIP3a/InputData/climate/atmosphere/' \
+        f'obsclim/global/daily/historical/CHELSA-W5E5/{basename}'
+    path = f'external/cw5e5/daily/{basename}'
 
     # download if missing
-    if not os.path.isfile(filepath):
-        print(f"Downloading {filepath} ...")
-        urllib.request.urlretrieve(
-            f'https://files.isimip.org/ISIMIP3a/InputData/climate/atmosphere/'
-            f'obsclim/global/daily/historical/CHELSA-W5E5/{filename}',
-            filepath)
+    for ext in ('.json', '.nc'):
+        if not os.path.isfile(path+ext):
+            print(f"Downloading {path+ext} ...")
+            urllib.request.urlretrieve(url+ext, path+ext)
 
     # return filepath
-    return filepath
+    return f'{path}.{ext}'
 
 
 def download_era5_daily(year, month):
