@@ -214,10 +214,17 @@ def open_climatology(source='era5', freq='day'):
     """Open temp, prec, stdv climatology on a consistent grid."""
 
     # open climatology (600x600 chunks raise memory warning on rigil)
-    shortnames = {'cera5': ('tas', 'pr'), 'era5': ('t2m', 'tp')}[source]
-    temp, prec = (xr.open_dataset(
-        f'external/{source}/clim/{source}.{var}.mon.8110.avg.nc',
-        chunks={'x': 300, 'y': 300})[var] for var in shortnames)
+    shortnames = ('t2m', 'tp') if source == 'era5' else ('tas', 'pr')
+    if source == 'cw5e5':
+        # FIXME combine cw5e5 data in preprocessing?
+        temp, prec = (xr.open_mfdataset(
+            f'external/{source}/clim/{source}.{var}.day.8110.avg.??.nc',
+            concat_dim='time', combine='nested',
+            chunks={'x': 300, 'y': 300})[var] for var in shortnames)
+    else:
+        temp, prec = (xr.open_dataset(
+            f'external/{source}/clim/{source}.{var}.mon.8110.avg.nc',
+            chunks={'x': 300, 'y': 300})[var] for var in shortnames)
 
     # homogenize coordinate names to cera5 data
     # FIXME default to era5 (month, longitude, latitude) or cw5e5 (lat, lon)
@@ -228,12 +235,16 @@ def open_climatology(source='era5', freq='day'):
         prec['x'] = (prec.x + 180) % 360 - 180
         temp = temp.drop('time')
         prec = prec.drop('time')
+    elif source == 'cw5e5':
+        temp = temp.rename(lon='x', lat='y')
+        prec = prec.rename(lon='x', lat='y')
 
     # crop a small region for a test
     # temp = temp.sel(x=slice(5, 10), y=slice(48, 43))
     # prec = prec.sel(x=slice(5, 10), y=slice(48, 43))
 
     # load era5 standard deviation
+    # FIXME also use cw5e5 standard deviation
     with xr.open_dataarray(
             f'external/era5/clim/era5.t2m.{freq}.8110.std.nc') as era5:
         if freq == 'day':
@@ -320,7 +331,7 @@ def main(source='era5'):
     """Main program called during execution."""
 
     # use dask distributed
-    if source != 'era5':
+    if source == 'cera5':
         dask.distributed.Client()
 
     # create directories if missing
@@ -342,6 +353,14 @@ def main(source='era5'):
     aggregate_era5_avg(var='tp')
     aggregate_era5_std(freq='day')
     aggregate_era5_std(freq='hour')
+    for month in range(1, 13):
+        aggregate_cw5e5(month, var='tas', func='avg')
+        aggregate_cw5e5(month, var='tas', func='std')
+        aggregate_cw5e5(month, var='pr', func='avg')
+
+    # use dask distributed
+    if source == 'cw5e5':
+        dask.distributed.Client()
 
     # unless file exists
     filepath = f'processed/glopdd.git.{source}.nc'
