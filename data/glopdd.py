@@ -55,8 +55,8 @@ def aggregate_cw5e5(month, var='tas', func='avg', start=1981, end=2010):
         download_cw5e5_daily(year, month, var) for year in range(start, end+1)]
     print(f"Computing {filepath} ...")
     with xr.open_mfdataset(paths, chunks={'lat': 300, 'lon': 300}) as ds:
-        getattr(ds, func.replace('avg', 'mean'))('time').to_netcdf(
-            filepath, encoding={var: {'zlib': True}})
+        ds = getattr(ds, func.replace('avg', 'mean'))('time', keep_attrs=True)
+        ds.to_netcdf(filepath, encoding={var: {'zlib': True}})
 
     # return file path
     return filepath
