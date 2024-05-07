@@ -221,10 +221,15 @@ def open_climatology(source='era5', freq='day'):
     shortnames = ('t2m', 'tp') if source == 'era5' else ('tas', 'pr')
     if source == 'cw5e5':
         # FIXME combine cw5e5 data in preprocessing?
+        time = xr.DataArray(data=range(1, 13), dims='time')
         temp, prec = (xr.open_mfdataset(
             f'external/{source}/clim/{source}.{var}.day.8110.avg.??.nc',
-            concat_dim='time', combine='nested',
-            chunks={'x': 300, 'y': 300})[var] for var in shortnames)
+            concat_dim=time, combine='nested',
+            chunks={'lon': 300, 'lat': 300})[var] for var in shortnames)
+        stdv = xr.open_mfdataset(
+            f'external/{source}/clim/{source}.tas.day.8110.std.??.nc',
+            concat_dim=time, combine='nested',
+            chunks={'lon': 300, 'lat': 300}).tas
     else:
         temp, prec = (xr.open_dataset(
             f'external/{source}/clim/{source}.{var}.mon.8110.avg.nc',
@@ -242,10 +247,14 @@ def open_climatology(source='era5', freq='day'):
     elif source == 'cw5e5':
         temp = temp.rename(lon='x', lat='y')
         prec = prec.rename(lon='x', lat='y')
+        stdv = stdv.rename(lon='x', lat='y')
 
     # crop a small region for a test
     # temp = temp.sel(x=slice(5, 10), y=slice(48, 43))
     # prec = prec.sel(x=slice(5, 10), y=slice(48, 43))
+
+    # FIXME this function has become a mess...
+    return temp, prec, stdv
 
     # load era5 standard deviation
     # FIXME also use cw5e5 standard deviation
