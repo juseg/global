@@ -256,7 +256,8 @@ def open_climatology(source='era5', freq='day', test=False):
         prec = prec.where(mask, drop=True)
 
     # FIXME this function has become a mess...
-    return temp, prec, stdv
+    if source == 'cw5e5':
+        return temp, prec, stdv
 
     # load era5 standard deviation
     # FIXME also use cw5e5 standard deviation
