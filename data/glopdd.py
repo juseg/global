@@ -387,7 +387,7 @@ def main(source='era5'):
         print(f"Writing {source} glacial inception threshold...")
 
         # compute glacial threshold
-        temp, prec, stdv = open_climatology(source=source, test=True)
+        temp, prec, stdv = open_climatology(source=source)
         smb = compute_mass_balance(temp, prec, stdv)
         git = compute_glacial_threshold(smb)
         git.astype('f4').to_netcdf(filepath, encoding={'git': {'zlib': True}})
