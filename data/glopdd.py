@@ -49,12 +49,16 @@ def aggregate_cw5e5(month, var='tas', func='avg', start=1981, end=2010):
     if os.path.isfile(filepath):
         return filepath
 
-    # compute multiyear statistic
+    # compute multiyear statistic (use preprocess to work around
+    # precision errors, see https://github.com/pydata/xarray/issues/2217)
     # FIXME implement avg of monthly precip sum
     paths = [
         download_cw5e5_daily(year, month, var) for year in range(start, end+1)]
     print(f"Computing {filepath} ...")
-    with xr.open_mfdataset(paths, chunks={'lat': 300, 'lon': 300}) as ds:
+    with xr.open_mfdataset(
+            paths, chunks={'lat': 300, 'lon': 300},
+            preprocess=lambda ds: ds.assign(
+                lat=ds.lat.astype('f4'), lon=ds.lon.astype('f4'))) as ds:
         ds = getattr(ds, func.replace('avg', 'mean'))('time', keep_attrs=True)
         ds.to_netcdf(filepath, encoding={var: {'zlib': True}})
 
@@ -210,17 +214,22 @@ def download_era5_monthly(year, var='t2m'):
 # Compute main outputs
 # --------------------
 
-def open_climatology(source='era5', freq='day'):
+def open_climatology(source='era5', freq='day', test=False):
     """Open temp, prec, stdv climatology on a consistent grid."""
 
     # open climatology (600x600 chunks raise memory warning on rigil)
     shortnames = ('t2m', 'tp') if source == 'era5' else ('tas', 'pr')
     if source == 'cw5e5':
         # FIXME combine cw5e5 data in preprocessing?
+        time = xr.DataArray(data=range(1, 13), dims='time')
         temp, prec = (xr.open_mfdataset(
             f'external/{source}/clim/{source}.{var}.day.8110.avg.??.nc',
-            concat_dim='time', combine='nested',
-            chunks={'x': 300, 'y': 300})[var] for var in shortnames)
+            concat_dim=time, combine='nested',
+            chunks={'lon': 300, 'lat': 300})[var] for var in shortnames)
+        stdv = xr.open_mfdataset(
+            f'external/{source}/clim/{source}.tas.day.8110.std.??.nc',
+            concat_dim=time, combine='nested',
+            chunks={'lon': 300, 'lat': 300}).tas
     else:
         temp, prec = (xr.open_dataset(
             f'external/{source}/clim/{source}.{var}.mon.8110.avg.nc',
@@ -238,10 +247,17 @@ def open_climatology(source='era5', freq='day'):
     elif source == 'cw5e5':
         temp = temp.rename(lon='x', lat='y')
         prec = prec.rename(lon='x', lat='y')
+        stdv = stdv.rename(lon='x', lat='y')
 
     # crop a small region for a test
-    # temp = temp.sel(x=slice(5, 10), y=slice(48, 43))
-    # prec = prec.sel(x=slice(5, 10), y=slice(48, 43))
+    if test:
+        mask = (5 < temp.x) & (temp.x < 10) & (43 < temp.y) & (temp.y < 48)
+        temp = temp.where(mask, drop=True)
+        prec = prec.where(mask, drop=True)
+
+    # FIXME this function has become a mess...
+    if source == 'cw5e5':
+        return temp, prec, stdv
 
     # load era5 standard deviation
     # FIXME also use cw5e5 standard deviation
