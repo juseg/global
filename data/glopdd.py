@@ -214,7 +214,7 @@ def download_era5_monthly(year, var='t2m'):
 # Compute main outputs
 # --------------------
 
-def open_climatology(source='era5', freq='day'):
+def open_climatology(source='era5', freq='day', test=False):
     """Open temp, prec, stdv climatology on a consistent grid."""
 
     # open climatology (600x600 chunks raise memory warning on rigil)
@@ -250,8 +250,10 @@ def open_climatology(source='era5', freq='day'):
         stdv = stdv.rename(lon='x', lat='y')
 
     # crop a small region for a test
-    # temp = temp.sel(x=slice(5, 10), y=slice(48, 43))
-    # prec = prec.sel(x=slice(5, 10), y=slice(48, 43))
+    if test:
+        mask = (5 < temp.x) & (temp.x < 10) & (43 < temp.y) & (temp.y < 48)
+        temp = temp.where(mask, drop=True)
+        prec = prec.where(mask, drop=True)
 
     # FIXME this function has become a mess...
     return temp, prec, stdv
@@ -384,7 +386,7 @@ def main(source='era5'):
         print(f"Writing {source} glacial inception threshold...")
 
         # compute glacial threshold
-        temp, prec, stdv = open_climatology(source=source)
+        temp, prec, stdv = open_climatology(source=source, test=True)
         smb = compute_mass_balance(temp, prec, stdv)
         git = compute_glacial_threshold(smb)
         git.astype('f4').to_netcdf(filepath, encoding={'git': {'zlib': True}})
