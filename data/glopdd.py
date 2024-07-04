@@ -9,8 +9,10 @@ import hashlib
 import json
 import os.path
 import urllib.request
+import warnings
 import cdsapi
 import dask.distributed
+import netCDF4
 import numpy as np
 import scipy.special as sc
 import xarray as xr
@@ -390,9 +392,17 @@ def compute_glacial_threshold(smb, source='chelsa'):
 def main(source='era5'):
     """Main program called during execution."""
 
-    # use dask distributed
-    if source == 'cera5':
-        dask.distributed.Client()
+    # warn if netCDF >= 1.6.1 (https://github.com/pydata/xarray/issues/7079)
+    if netCDF4.__version__ >= '1.6.1':
+        warnings.warn(
+            "Frequent HDF errors have been reported on netCDF4 >= 1.6.1, "
+            "consider downgrading (xarray issues #7079, #3961).")
+
+    # use dask distributed, retry on CommClosedError
+    dask.config.set({"distributed.comm.retry.count": 10})
+    dask.config.set({"distributed.comm.timeouts.connect": '30'})
+    dask.config.set({"distributed.comm.timeouts.tcp": '30'})
+    dask.distributed.Client(n_workers=8, threads_per_worker=1)
 
     # create directories if missing
     # FIXME only create as needed
