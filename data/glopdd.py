@@ -284,6 +284,47 @@ def open_climatology(source='era5', freq='day', test=False):
     return temp, prec, stdv
 
 
+def open_climate_tile(tile, chunks=None, source='cw5e5'):
+    """Open temp, prec, stdv climatology for a 30x30 degree tile.
+
+    Chunks default to 1800x1800. Benchmarks on rigil, one tile, twelve offsets.
+    When using 24 offsets instead, chunks should be half-sized, etc.
+
+    - 1 workers, 1 threads, 3600x3600: 84 secs -> global 101 min
+    - 2 workers, 2 threads, 3600x3600: 53 secs
+    - 4 workers, 4 threads, 3600x3600: 35 secs, mem warnings
+    - 4 workers, 4 threads, 1800x1800: 32 secs
+    - 8 workers, 8 threads, 1800x1800: 22 secs -> global 26 min
+    - 8 workers, 8 threads, 1200x1200: 23 secs
+    - 16 workers, 16 threads, 900x900: 24 secs, one tcp error
+    - 8 workers, 24 threads, 900x900: 25 secs
+    - 8 workers, 24 threads, 1200x1200: 31 secs
+    """
+
+    # open climatology from hyoga cache directory
+    prefix = os.path.join('~', '.cache', 'hyoga', 'cw5e5', 'clim', 'cw5e5')
+    chunks = chunks or {'lat': 1800, 'lon': 1800}
+    temp = xr.open_mfdataset(
+        f'{prefix}.tas.mon.8110.avg.{tile}.??.nc', chunks=chunks).tas
+    prec = xr.open_mfdataset(
+        f'{prefix}.pr.mon.8110.avg.{tile}.??.nc', chunks=chunks).pr
+    stdv = xr.open_mfdataset(
+        f'{prefix}.tas.mon.8110.std.{tile}.??.nc', chunks=chunks).tas
+
+    # homogenize coordinate names to cw5e5 data
+    # if source == 'cera5':
+    #     temp = temp.rename(x='lon', y='lat')
+    #     prec = prec.rename(x='lon', y='lat')
+    #     stdv = stdv.rename(x='lon', y='lat')
+
+    # load era5 standard deviation
+    # if source == 'cera5':
+    #     interp_era5_stdev()
+
+    # return temperature, precipitation, standard deviation
+    return temp, prec, stdv
+
+
 def compute_mass_balance(temp, prec, stdv):
     """Compute mass balance from climatology."""
 
