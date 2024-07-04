@@ -396,27 +396,12 @@ def main(source='era5'):
 
     # create directories if missing
     # FIXME only create as needed
-    os.makedirs('external/cera5/clim', exist_ok=True)
-    os.makedirs('external/cw5e5/clim', exist_ok=True)
-    os.makedirs('external/cw5e5/daily', exist_ok=True)
     os.makedirs('external/era5/clim', exist_ok=True)
     os.makedirs('external/era5/daily', exist_ok=True)
     os.makedirs('external/era5/hourly', exist_ok=True)
     os.makedirs('external/era5/monthly', exist_ok=True)
     os.makedirs('processed', exist_ok=True)
 
-    # compute climatologies
-    # FIXME only compute as needed
-    aggregate_cera5(var='tas')
-    aggregate_cera5(var='pr')
-    aggregate_era5_avg(var='t2m')
-    aggregate_era5_avg(var='tp')
-    aggregate_era5_std(freq='day')
-    aggregate_era5_std(freq='hour')
-    for month in range(1, 13):
-        aggregate_cw5e5(month, var='tas', func='avg')
-        aggregate_cw5e5(month, var='tas', func='std')
-        aggregate_cw5e5(month, var='pr', func='avg')
 
     # use dask distributed
     if source == 'cw5e5':
