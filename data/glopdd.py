@@ -330,7 +330,7 @@ def compute_mass_balance(temp, prec, stdv):
 
     # number of days per months to convert precip and compute pdd
     months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
-    months = xr.DataArray(months, coords={'time': temp.time})
+    months = xr.DataArray(months, coords={'month': temp.month})
 
     # convert temperature to degC
     if 'units' not in temp.attrs:
@@ -366,8 +366,8 @@ def compute_mass_balance(temp, prec, stdv):
     melt = ddf * pdd  # kg m-2
 
     # surface mass balance in kg m-2
-    smb = (snow - melt).sum('time')
-    smb = smb.transpose('offset', 'y', 'x')
+    smb = (snow - melt).sum('month')
+    smb = smb.transpose('offset', 'lat', 'lon')
 
     # return surface mass balance
     return smb
