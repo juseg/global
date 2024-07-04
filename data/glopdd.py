@@ -389,7 +389,7 @@ def compute_glacial_threshold(smb, source='chelsa'):
 # Main program
 # ------------
 
-def main(source='era5'):
+def main(source='cw5e5'):
     """Main program called during execution."""
 
     # warn if netCDF >= 1.6.1 (https://github.com/pydata/xarray/issues/7079)
@@ -412,25 +412,28 @@ def main(source='era5'):
     os.makedirs('external/era5/monthly', exist_ok=True)
     os.makedirs('processed', exist_ok=True)
 
+    # for corner coordinates of each tile
+    lats = range(-90, 90, 30)
+    lons = range(-180, 180, 30)
+    for (lat, lon) in zip(lats, lons):
 
-    # use dask distributed
-    if source == 'cw5e5':
-        dask.distributed.Client()
+        # get tile name from literal lat and lon
+        llat = f'{"n" if (lat >= 0) else "s"}{abs(lat):02d}'
+        llon = f'{"e" if (lon >= 0) else "w"}{abs(lon):03d}'
+        tile = llat + llon
 
-    # unless file exists
-    filepath = f'processed/glopdd.git.{source}.nc'
-    if not os.path.isfile(filepath):
-        print(f"Writing {source} glacial inception threshold...")
+        # unless file exists
+        filepath = f'processed/glopdd.git.{source}.{tile}.nc'
+        if os.path.isfile(filepath):
+            continue
+        print(f"Computing {filepath} ...")
 
         # compute glacial threshold
-        temp, prec, stdv = open_climatology(source=source)
+        temp, prec, stdv = open_climate_tile(tile)
         smb = compute_mass_balance(temp, prec, stdv)
         git = compute_glacial_threshold(smb)
         git.astype('f4').to_netcdf(filepath, encoding={'git': {'zlib': True}})
 
-        # reopen and save tiled geotiff
-        git = xr.open_dataarray(filepath, chunks={'y': 240})
-        git.rio.to_raster(filepath[:-3]+'.tif', compress='LZW', tiled=True)
 
 
 if __name__ == '__main__':
