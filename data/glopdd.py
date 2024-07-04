@@ -306,12 +306,15 @@ def open_climate_tile(tile, chunks=None, source='cw5e5'):
     # open climatology from hyoga cache directory
     prefix = os.path.join('~', '.cache', 'hyoga', 'cw5e5', 'clim', 'cw5e5')
     chunks = chunks or {'lat': 1800, 'lon': 1800}
-    temp = xr.open_mfdataset(
-        f'{prefix}.tas.mon.8110.avg.{tile}.??.nc', chunks=chunks).tas
-    prec = xr.open_mfdataset(
-        f'{prefix}.pr.mon.8110.avg.{tile}.??.nc', chunks=chunks).pr
-    stdv = xr.open_mfdataset(
-        f'{prefix}.tas.mon.8110.std.{tile}.??.nc', chunks=chunks).tas
+    with xr.open_mfdataset(
+            f'{prefix}.tas.mon.8110.avg.{tile}.??.nc', chunks=chunks) as ds:
+        temp = ds.tas
+    with xr.open_mfdataset(
+            f'{prefix}.pr.mon.8110.avg.{tile}.??.nc', chunks=chunks) as ds:
+        prec = ds.pr
+    with xr.open_mfdataset(
+            f'{prefix}.tas.mon.8110.std.{tile}.??.nc', chunks=chunks) as ds:
+        stdv = ds.tas
 
     # homogenize coordinate names to cw5e5 data
     # if source == 'cera5':
@@ -415,7 +418,7 @@ def main(source='cw5e5'):
     # for corner coordinates of each tile
     lats = range(-90, 90, 30)
     lons = range(-180, 180, 30)
-    for (lat, lon) in zip(lats, lons):
+    for (lat, lon) in ((lat, lon) for lat in lats for lon in lons):
 
         # get tile name from literal lat and lon
         llat = f'{"n" if (lat >= 0) else "s"}{abs(lat):02d}'
