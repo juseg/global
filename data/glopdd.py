@@ -294,7 +294,8 @@ def compute_glacial_threshold(smb, source='chelsa'):
     """Compute glacial inception threshold from surface mass balance."""
 
     # use argmax because idxmax triggers rechunking
-    git = (smb > 0).argmax(dim='offset').where(smb[-1] > 0).rename('git')
+    git = (smb > 0).argmax(dim='offset').where(smb.isel(offset=-1) > 0)
+    git = git.rename('git')
     git.attrs.update(long_name='glacial inception threshold', units='K')
 
     # return glacial inception threshold
