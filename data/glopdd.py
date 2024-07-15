@@ -67,38 +67,6 @@ def aggregate_era5_std(freq='day', start=1981, end=2010):
 # Download weather data
 # ---------------------
 
-def download_cw5e5_daily(year, month, var='tas', res='300arcsec'):
-    """Download daily means for a single month."""
-    # NOTE: these files will be useful in hyoga
-    # - chelsa/w5e5v1.0_obsclim_mask_30arcsec_global.nc
-    # - chelsa/w5e5v1.0_obsclim_orog_30arcsec_global.nc
-
-    # online url and local file path
-    basename = \
-        f'chelsa-w5e5_obsclim_{var}_{res}_global_daily_{year:d}{month:02d}'
-    url = \
-        f'https://files.isimip.org/ISIMIP3a/InputData/climate/atmosphere/' \
-        f'obsclim/global/daily/historical/CHELSA-W5E5/{basename}'
-    path = f'external/cw5e5/daily/{basename}'
-
-    # download if missing
-    for ext in ('.json', '.nc'):
-        if not os.path.isfile(path+ext):
-            print(f"Downloading {path+ext} ...")
-            urllib.request.urlretrieve(url+ext, path+ext)
-
-    # verify downloaded files
-    print(f"Checking {path}.nc ...")
-    with open(path+'.json', 'rb') as file:
-        provided = json.load(file)['checksum']
-    with open(path+'.nc', 'rb') as file:
-        computed = hashlib.sha512(file.read()).hexdigest()
-    assert computed == provided
-
-    # return filepath
-    return path + '.nc'
-
-
 def download_era5_daily(year, month):
     """Download ERA5 daily means for a single month."""
 
