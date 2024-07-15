@@ -306,15 +306,12 @@ def open_climate_tile(tile, chunks=None, source='cw5e5'):
     # open climatology from hyoga cache directory
     prefix = os.path.join('~', '.cache', 'hyoga', 'cw5e5', 'clim', 'cw5e5')
     chunks = chunks or {'month': 3, 'lat': 900, 'lon': 900}
-    # FIXME why does this even work??
-    with (
-        xr.open_dataarray(
-            f'{prefix}.tas.mon.8110.avg.{tile}.nc', chunks=chunks) as temp,
-        xr.open_dataarray(
-            f'{prefix}.pr.mon.8110.avg.{tile}.nc', chunks=chunks) as prec,
-        xr.open_dataarray(
-            f'{prefix}.tas.mon.8110.std.{tile}.nc', chunks=chunks) as stdv):
-        pass
+    temp = xr.open_dataarray(
+        f'{prefix}.tas.mon.8110.avg.{tile}.nc', chunks=chunks)
+    prec = xr.open_dataarray(
+        f'{prefix}.pr.mon.8110.avg.{tile}.nc', chunks=chunks)
+    stdv = xr.open_dataarray(
+        f'{prefix}.tas.mon.8110.std.{tile}.nc', chunks=chunks)
 
     # homogenize coordinate names to cw5e5 data
     # if source == 'cera5':
@@ -436,6 +433,10 @@ def main(source='cw5e5'):
         smb = compute_mass_balance(temp, prec, stdv)
         git = compute_glacial_threshold(smb)
         git.astype('f4').to_netcdf(filepath, encoding={'git': {'zlib': True}})
+
+        # close files after computation (xarray #4131)
+        for da in temp, prec, stdv:
+            da.close()
 
 
 
