@@ -134,8 +134,8 @@ def download_era5_monthly(year, var='t2m'):
     return filepath
 
 
-# Compute main outputs
-# --------------------
+# Open input climatologies
+# ------------------------
 
 def open_climatology(source='era5', freq='day', test=False):
     """Open temp, prec, stdv climatology on a consistent grid."""
@@ -238,6 +238,9 @@ def open_climate_tile(tile, chunks=None, source='cw5e5'):
     # return temperature, precipitation, standard deviation
     return temp, prec, stdv
 
+
+# Compute main outputs
+# --------------------
 
 def compute_mass_balance(temp, prec, stdv):
     """Compute mass balance from climatology."""
