@@ -354,6 +354,12 @@ def main(source='cw5e5'):
         for da in temp, prec, stdv:
             da.close()
 
+    # reopen and save global geotiff
+    filepath = f'processed/glopdd.git.{source}.tif'
+    print(f"Aggregating {filepath} ...")
+    git = xr.open_mfdataset(f'processed/glopdd.git.{source}.??0???0.nc').git
+    git = git.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
+    git.rio.to_raster(filepath, compress='LZW', tiled=True)
 
 
 if __name__ == '__main__':
