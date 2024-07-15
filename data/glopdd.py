@@ -287,26 +287,11 @@ def open_climatology(source='era5', freq='day', test=False):
 
 
 def open_climate_tile(tile, chunks=None, source='cw5e5'):
-    """Open temp, prec, stdv climatology for a 30x30 degree tile.
-
-    Chunks default to 1800x1800. Benchmarks on rigil, one tile, twelve offsets.
-    When using 24 offsets instead, chunks should be half-sized, etc.
-
-    - 1 workers, 1 threads, 3600x3600: 84 secs -> global 101 min
-    - 2 workers, 2 threads, 3600x3600: 53 secs
-    - 4 workers, 4 threads, 3600x3600: 35 secs, mem warnings
-    - 4 workers, 4 threads, 1800x1800: 32 secs
-    - 8 workers, 8 threads, 1800x1800: 22 secs -> global 26 min
-    - 8 workers, 8 threads, 1200x1200: 23 secs
-    - 16 workers, 16 threads, 900x900: 24 secs, one tcp error
-    - 8 workers, 24 threads, 900x900: 25 secs
-    - 8 workers, 24 threads, 1200x1200: 31 secs
-    """
+    """Open temp, prec, stdv climatology for a 30x30 degree tile."""
 
     # open climatology from hyoga cache directory
     prefix = os.path.join('~', '.cache', 'hyoga', source, 'clim', source)
-    chunks = chunks or {'month': 3, 'lat': 900, 'lon': 900}
-    kwargs = {'chunks': chunks, 'decode_coords': 'all'}
+    kwargs = {'chunks': chunks or {}, 'decode_coords': 'all'}
     temp = xr.open_dataarray(f'{prefix}.tas.mon.8110.avg.{tile}.nc', **kwargs)
     prec = xr.open_dataarray(f'{prefix}.pr.mon.8110.avg.{tile}.nc', **kwargs)
 
