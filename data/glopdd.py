@@ -16,57 +16,10 @@ import netCDF4
 import numpy as np
 import scipy.special as sc
 import xarray as xr
-import hyoga
 
 
 # Aggregate climatologies
 # -----------------------
-
-def aggregate_cera5(var='tas'):
-    """Convert CHELSA-ERA5 geotiff to netcdf for efficient chunking."""
-    # FIXME: eventually we may want to recompute the climatologies to fit
-    # a custom subinterval of 1980-2019 instead of the default 1981-2010.
-
-    # if file exists, return path
-    filepath = f'external/cera5/clim/cera5.{var}.mon.8110.avg.nc'
-    if os.path.isfile(filepath):
-        return filepath
-
-    # convert climatology
-    hyoga.open.reprojected._open_climatology(
-        source='chelsa', variable=var).to_dataset(name=var).to_netcdf(
-            filepath, encoding={var: {'zlib': True}})
-
-    # return file path
-    return filepath
-
-
-def aggregate_cw5e5(month, var='tas', func='avg', start=1981, end=2010):
-    """Compute multiyear monthly aggregate from daily means."""
-
-    # if file exists, return path
-    filepath = (
-        'external/cw5e5/clim/cw5e5.'
-        f'{var}.day.{start%100:02d}{end%100:02d}.{func}.{month:02d}.nc')
-    if os.path.isfile(filepath):
-        return filepath
-
-    # compute multiyear statistic (use preprocess to work around
-    # precision errors, see https://github.com/pydata/xarray/issues/2217)
-    # FIXME implement avg of monthly precip sum
-    paths = [
-        download_cw5e5_daily(year, month, var) for year in range(start, end+1)]
-    print(f"Computing {filepath} ...")
-    with xr.open_mfdataset(
-            paths, chunks={'lat': 300, 'lon': 300},
-            preprocess=lambda ds: ds.assign(
-                lat=ds.lat.astype('f4'), lon=ds.lon.astype('f4'))) as ds:
-        ds = getattr(ds, func.replace('avg', 'mean'))('time', keep_attrs=True)
-        ds.to_netcdf(filepath, encoding={var: {'zlib': True}})
-
-    # return file path
-    return filepath
-
 
 def aggregate_era5_avg(var='t2m', start=1981, end=2010):
     """Compute ERA5 multiyear monthly averages from monthly means."""
