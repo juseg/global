@@ -304,20 +304,26 @@ def open_climate_tile(tile, chunks=None, source='cw5e5'):
     """
 
     # open climatology from hyoga cache directory
-    prefix = os.path.join('~', '.cache', 'hyoga', 'cw5e5', 'clim', 'cw5e5')
+    prefix = os.path.join('~', '.cache', 'hyoga', source, 'clim', source)
     chunks = chunks or {'month': 3, 'lat': 900, 'lon': 900}
-    temp = xr.open_dataarray(
-        f'{prefix}.tas.mon.8110.avg.{tile}.nc', chunks=chunks)
-    prec = xr.open_dataarray(
-        f'{prefix}.pr.mon.8110.avg.{tile}.nc', chunks=chunks)
-    stdv = xr.open_dataarray(
-        f'{prefix}.tas.mon.8110.std.{tile}.nc', chunks=chunks)
+    kwargs = {'chunks': chunks, 'decode_coords': 'all'}
+    temp = xr.open_dataarray(f'{prefix}.tas.mon.8110.avg.{tile}.nc', **kwargs)
+    prec = xr.open_dataarray(f'{prefix}.pr.mon.8110.avg.{tile}.nc', **kwargs)
 
-    # homogenize coordinate names to cw5e5 data
-    # if source == 'cera5':
-    #     temp = temp.rename(x='lon', y='lat')
-    #     prec = prec.rename(x='lon', y='lat')
-    #     stdv = stdv.rename(x='lon', y='lat')
+    # align coordinate names and values to cw5e5 data
+    # FIXME do that in hyoga?
+    if source == 'cera5':
+        temp = temp.rename(x='lon', y='lat')
+        prec = prec.rename(x='lon', y='lat')
+        temp['lat'] = temp.lat.astype('f4')
+        temp['lon'] = temp.lon.astype('f4')
+        prec['lat'] = prec.lat.astype('f4')
+        prec['lon'] = prec.lon.astype('f4')
+
+    # open cw5e5 standard deviation
+    # FIXME use interpolated era5
+    prefix = prefix.replace(source, 'cw5e5')
+    stdv = xr.open_dataarray(f'{prefix}.tas.mon.8110.std.{tile}.nc', **kwargs)
 
     # load era5 standard deviation
     # if source == 'cera5':
@@ -429,7 +435,7 @@ def main(source='cw5e5'):
         print(f"Computing {filepath} ...")
 
         # compute glacial threshold
-        temp, prec, stdv = open_climate_tile(tile)
+        temp, prec, stdv = open_climate_tile(tile, source=source)
         smb = compute_mass_balance(temp, prec, stdv)
         git = compute_glacial_threshold(smb)
         git.astype('f4').to_netcdf(filepath, encoding={'git': {'zlib': True}})
