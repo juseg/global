@@ -305,16 +305,16 @@ def open_climate_tile(tile, chunks=None, source='cw5e5'):
 
     # open climatology from hyoga cache directory
     prefix = os.path.join('~', '.cache', 'hyoga', 'cw5e5', 'clim', 'cw5e5')
-    chunks = chunks or {'lat': 1800, 'lon': 1800}
-    with xr.open_mfdataset(
-            f'{prefix}.tas.mon.8110.avg.{tile}.??.nc', chunks=chunks) as ds:
-        temp = ds.tas
-    with xr.open_mfdataset(
-            f'{prefix}.pr.mon.8110.avg.{tile}.??.nc', chunks=chunks) as ds:
-        prec = ds.pr
-    with xr.open_mfdataset(
-            f'{prefix}.tas.mon.8110.std.{tile}.??.nc', chunks=chunks) as ds:
-        stdv = ds.tas
+    chunks = chunks or {'month': 3, 'lat': 900, 'lon': 900}
+    # FIXME why does this even work??
+    with (
+        xr.open_dataarray(
+            f'{prefix}.tas.mon.8110.avg.{tile}.nc', chunks=chunks) as temp,
+        xr.open_dataarray(
+            f'{prefix}.pr.mon.8110.avg.{tile}.nc', chunks=chunks) as prec,
+        xr.open_dataarray(
+            f'{prefix}.tas.mon.8110.std.{tile}.nc', chunks=chunks) as stdv):
+        pass
 
     # homogenize coordinate names to cw5e5 data
     # if source == 'cera5':
