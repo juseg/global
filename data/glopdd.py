@@ -9,62 +9,17 @@ import hashlib
 import json
 import os.path
 import urllib.request
+import warnings
 import cdsapi
 import dask.distributed
+import netCDF4
 import numpy as np
 import scipy.special as sc
 import xarray as xr
-import hyoga
 
 
 # Aggregate climatologies
 # -----------------------
-
-def aggregate_cera5(var='tas'):
-    """Convert CHELSA-ERA5 geotiff to netcdf for efficient chunking."""
-    # FIXME: eventually we may want to recompute the climatologies to fit
-    # a custom subinterval of 1980-2019 instead of the default 1981-2010.
-
-    # if file exists, return path
-    filepath = f'external/cera5/clim/cera5.{var}.mon.8110.avg.nc'
-    if os.path.isfile(filepath):
-        return filepath
-
-    # convert climatology
-    hyoga.open.reprojected._open_climatology(
-        source='chelsa', variable=var).to_dataset(name=var).to_netcdf(
-            filepath, encoding={var: {'zlib': True}})
-
-    # return file path
-    return filepath
-
-
-def aggregate_cw5e5(month, var='tas', func='avg', start=1981, end=2010):
-    """Compute multiyear monthly aggregate from daily means."""
-
-    # if file exists, return path
-    filepath = (
-        'external/cw5e5/clim/cw5e5.'
-        f'{var}.day.{start%100:02d}{end%100:02d}.{func}.{month:02d}.nc')
-    if os.path.isfile(filepath):
-        return filepath
-
-    # compute multiyear statistic (use preprocess to work around
-    # precision errors, see https://github.com/pydata/xarray/issues/2217)
-    # FIXME implement avg of monthly precip sum
-    paths = [
-        download_cw5e5_daily(year, month, var) for year in range(start, end+1)]
-    print(f"Computing {filepath} ...")
-    with xr.open_mfdataset(
-            paths, chunks={'lat': 300, 'lon': 300},
-            preprocess=lambda ds: ds.assign(
-                lat=ds.lat.astype('f4'), lon=ds.lon.astype('f4'))) as ds:
-        ds = getattr(ds, func.replace('avg', 'mean'))('time', keep_attrs=True)
-        ds.to_netcdf(filepath, encoding={var: {'zlib': True}})
-
-    # return file path
-    return filepath
-
 
 def aggregate_era5_avg(var='t2m', start=1981, end=2010):
     """Compute ERA5 multiyear monthly averages from monthly means."""
@@ -111,38 +66,6 @@ def aggregate_era5_std(freq='day', start=1981, end=2010):
 
 # Download weather data
 # ---------------------
-
-def download_cw5e5_daily(year, month, var='tas', res='300arcsec'):
-    """Download daily means for a single month."""
-    # NOTE: these files will be useful in hyoga
-    # - chelsa/w5e5v1.0_obsclim_mask_30arcsec_global.nc
-    # - chelsa/w5e5v1.0_obsclim_orog_30arcsec_global.nc
-
-    # online url and local file path
-    basename = \
-        f'chelsa-w5e5_obsclim_{var}_{res}_global_daily_{year:d}{month:02d}'
-    url = \
-        f'https://files.isimip.org/ISIMIP3a/InputData/climate/atmosphere/' \
-        f'obsclim/global/daily/historical/CHELSA-W5E5/{basename}'
-    path = f'external/cw5e5/daily/{basename}'
-
-    # download if missing
-    for ext in ('.json', '.nc'):
-        if not os.path.isfile(path+ext):
-            print(f"Downloading {path+ext} ...")
-            urllib.request.urlretrieve(url+ext, path+ext)
-
-    # verify downloaded files
-    print(f"Checking {path}.nc ...")
-    with open(path+'.json', 'rb') as file:
-        provided = json.load(file)['checksum']
-    with open(path+'.nc', 'rb') as file:
-        computed = hashlib.sha512(file.read()).hexdigest()
-    assert computed == provided
-
-    # return filepath
-    return path + '.nc'
-
 
 def download_era5_daily(year, month):
     """Download ERA5 daily means for a single month."""
@@ -211,8 +134,8 @@ def download_era5_monthly(year, var='t2m'):
     return filepath
 
 
-# Compute main outputs
-# --------------------
+# Open input climatologies
+# ------------------------
 
 def open_climatology(source='era5', freq='day', test=False):
     """Open temp, prec, stdv climatology on a consistent grid."""
@@ -284,12 +207,47 @@ def open_climatology(source='era5', freq='day', test=False):
     return temp, prec, stdv
 
 
+def open_climate_tile(tile, chunks=None, source='cw5e5'):
+    """Open temp, prec, stdv climatology for a 30x30 degree tile."""
+
+    # open climatology from hyoga cache directory
+    prefix = os.path.join('~', '.cache', 'hyoga', source, 'clim', source)
+    kwargs = {'chunks': chunks or {}, 'decode_coords': 'all'}
+    temp = xr.open_dataarray(f'{prefix}.tas.mon.8110.avg.{tile}.nc', **kwargs)
+    prec = xr.open_dataarray(f'{prefix}.pr.mon.8110.avg.{tile}.nc', **kwargs)
+
+    # align coordinate names and values to cw5e5 data
+    # FIXME do that in hyoga?
+    if source == 'cera5':
+        temp = temp.rename(x='lon', y='lat')
+        prec = prec.rename(x='lon', y='lat')
+        temp['lat'] = temp.lat.astype('f4')
+        temp['lon'] = temp.lon.astype('f4')
+        prec['lat'] = prec.lat.astype('f4')
+        prec['lon'] = prec.lon.astype('f4')
+
+    # open cw5e5 standard deviation
+    # FIXME use interpolated era5
+    prefix = prefix.replace(source, 'cw5e5')
+    stdv = xr.open_dataarray(f'{prefix}.tas.mon.8110.std.{tile}.nc', **kwargs)
+
+    # load era5 standard deviation
+    # if source == 'cera5':
+    #     interp_era5_stdev()
+
+    # return temperature, precipitation, standard deviation
+    return temp, prec, stdv
+
+
+# Compute main outputs
+# --------------------
+
 def compute_mass_balance(temp, prec, stdv):
     """Compute mass balance from climatology."""
 
     # number of days per months to convert precip and compute pdd
     months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
-    months = xr.DataArray(months, coords={'time': temp.time})
+    months = xr.DataArray(months, coords={'month': temp.month})
 
     # convert temperature to degC
     if 'units' not in temp.attrs:
@@ -325,8 +283,8 @@ def compute_mass_balance(temp, prec, stdv):
     melt = ddf * pdd  # kg m-2
 
     # surface mass balance in kg m-2
-    smb = (snow - melt).sum('time')
-    smb = smb.transpose('offset', 'y', 'x')
+    smb = (snow - melt).sum('month')
+    smb = smb.transpose('offset', 'lat', 'lon')
 
     # return surface mass balance
     return smb
@@ -336,7 +294,8 @@ def compute_glacial_threshold(smb, source='chelsa'):
     """Compute glacial inception threshold from surface mass balance."""
 
     # use argmax because idxmax triggers rechunking
-    git = (smb > 0).argmax(dim='offset').where(smb[-1] > 0).rename('git')
+    git = (smb > 0).argmax(dim='offset').where(smb.isel(offset=-1) > 0)
+    git = git.rename('git')
     git.attrs.update(long_name='glacial inception threshold', units='K')
 
     # return glacial inception threshold
@@ -346,55 +305,61 @@ def compute_glacial_threshold(smb, source='chelsa'):
 # Main program
 # ------------
 
-def main(source='era5'):
+def main(source='cw5e5'):
     """Main program called during execution."""
 
-    # use dask distributed
-    if source == 'cera5':
-        dask.distributed.Client()
+    # warn if netCDF >= 1.6.1 (https://github.com/pydata/xarray/issues/7079)
+    if netCDF4.__version__ >= '1.6.1':
+        warnings.warn(
+            "Frequent HDF errors have been reported on netCDF4 >= 1.6.1, "
+            "consider downgrading (xarray issues #7079, #3961).")
+
+    # use dask distributed, retry on CommClosedError
+    dask.config.set({"distributed.comm.retry.count": 10})
+    dask.config.set({"distributed.comm.timeouts.connect": '30'})
+    dask.config.set({"distributed.comm.timeouts.tcp": '30'})
+    dask.distributed.Client(n_workers=8, threads_per_worker=1)
 
     # create directories if missing
     # FIXME only create as needed
-    os.makedirs('external/cera5/clim', exist_ok=True)
-    os.makedirs('external/cw5e5/clim', exist_ok=True)
-    os.makedirs('external/cw5e5/daily', exist_ok=True)
     os.makedirs('external/era5/clim', exist_ok=True)
     os.makedirs('external/era5/daily', exist_ok=True)
     os.makedirs('external/era5/hourly', exist_ok=True)
     os.makedirs('external/era5/monthly', exist_ok=True)
     os.makedirs('processed', exist_ok=True)
 
-    # compute climatologies
-    # FIXME only compute as needed
-    aggregate_cera5(var='tas')
-    aggregate_cera5(var='pr')
-    aggregate_era5_avg(var='t2m')
-    aggregate_era5_avg(var='tp')
-    aggregate_era5_std(freq='day')
-    aggregate_era5_std(freq='hour')
-    for month in range(1, 13):
-        aggregate_cw5e5(month, var='tas', func='avg')
-        aggregate_cw5e5(month, var='tas', func='std')
-        aggregate_cw5e5(month, var='pr', func='avg')
+    # for corner coordinates of each tile
+    lats = range(-90, 90, 30)
+    lons = range(-180, 180, 30)
+    for (lat, lon) in ((lat, lon) for lat in lats for lon in lons):
 
-    # use dask distributed
-    if source == 'cw5e5':
-        dask.distributed.Client()
+        # get tile name from literal lat and lon
+        llat = f'{"n" if (lat >= 0) else "s"}{abs(lat):02d}'
+        llon = f'{"e" if (lon >= 0) else "w"}{abs(lon):03d}'
+        tile = llat + llon
 
-    # unless file exists
-    filepath = f'processed/glopdd.git.{source}.nc'
-    if not os.path.isfile(filepath):
-        print(f"Writing {source} glacial inception threshold...")
+        # unless file exists
+        filepath = f'processed/glopdd.git.{source}.{tile}.nc'
+        if os.path.isfile(filepath):
+            continue
+        print(f"Computing {filepath} ...")
 
         # compute glacial threshold
-        temp, prec, stdv = open_climatology(source=source)
+        temp, prec, stdv = open_climate_tile(tile, source=source)
         smb = compute_mass_balance(temp, prec, stdv)
         git = compute_glacial_threshold(smb)
         git.astype('f4').to_netcdf(filepath, encoding={'git': {'zlib': True}})
 
-        # reopen and save tiled geotiff
-        git = xr.open_dataarray(filepath, chunks={'y': 240})
-        git.rio.to_raster(filepath[:-3]+'.tif', compress='LZW', tiled=True)
+        # close files after computation (xarray #4131)
+        for da in temp, prec, stdv:
+            da.close()
+
+    # reopen and save global geotiff
+    filepath = f'processed/glopdd.git.{source}.tif'
+    print(f"Aggregating {filepath} ...")
+    git = xr.open_mfdataset(f'processed/glopdd.git.{source}.??0???0.nc').git
+    git = git.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
+    git.rio.to_raster(filepath, compress='LZW', tiled=True)
 
 
 if __name__ == '__main__':
