@@ -311,7 +311,7 @@ def main():
         for tile, filepath in zip(tiles, paths):
 
             # unless file exists
-            if args.overwrite or os.path.isfile(filepath):
+            if args.overwrite or not os.path.isfile(filepath):
 
                 # compute glacial threshold
                 print(f"Computing {filepath} ...")
