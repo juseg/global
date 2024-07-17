@@ -260,6 +260,8 @@ def main():
     # parse command-line arguments
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        '-o', '--overwrite', action='store_true', help='replace old files')
+    parser.add_argument(
         '-f', '--freq', choices=['day', 'hour'], default='day')
     parser.add_argument(
         '-s', '--source', choices=['cera5', 'cw5e5'], default='cw5e5')
@@ -298,7 +300,7 @@ def main():
     for tile, filepath in zip(tiles, paths):
 
         # unless file exists
-        if os.path.isfile(filepath):
+        if os.path.isfile(filepath) and not args.overwrite:
             continue
         print(f"Computing {filepath} ...")
 
