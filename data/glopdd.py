@@ -216,11 +216,6 @@ def open_climate_tile(tile, chunks=None, source='cw5e5'):
     temp = xr.open_dataarray(f'{prefix}.tas.mon.8110.avg.{tile}.nc', **kwargs)
     prec = xr.open_dataarray(f'{prefix}.pr.mon.8110.avg.{tile}.nc', **kwargs)
 
-    # FIXME do we need to adjust units here?
-    # - cw5e5 has units K, kg m-2 s-1
-    # - cera5 has no units but uses degC, kg m-2, add_offset, scale_factor
-    # - hyoga atmosphere() converts chelsa units to kg m-2 day-1
-
     # align coordinate names and values to cw5e5 data
     # FIXME do that in hyoga?
     if source == 'cera5':
@@ -232,6 +227,23 @@ def open_climate_tile(tile, chunks=None, source='cw5e5'):
         temp['lon'] = temp.lon.astype('f4')
         prec['lat'] = prec.lat.astype('f4')
         prec['lon'] = prec.lon.astype('f4')
+
+    # convert units to degC and kg m-2 (per month)
+    # FIXME assign cera5 units in hyoga, e.g.
+    # temp = temp.assign_attrs(units='K') + 273.15
+    # prec = prec.assign_attrs(units='kg m-2 s-1') / 24 / 3600 / months
+    if source == 'cera5':
+        assert 'units' not in temp.attrs
+        assert 'units' not in prec.attrs
+        temp = temp.assign_attrs(units='degC')
+        prec = prec.assign_attrs(units='kg m-2')
+    if source == 'cw5e5':
+        assert temp.units == 'K'
+        assert prec.units == 'kg m-2 s-1'
+        months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
+        months = xr.DataArray(months, coords={'month': temp.month})
+        temp = temp.assign_attrs(units='degC') - 273.15
+        prec = prec.assign_attrs(units='kg m-2') * 3600 * 24 * months
 
     # open matching or interpolated standard deviation
     if source == 'cera5':
@@ -274,28 +286,9 @@ def compute_mass_balance(temp, prec, stdv):
     """Compute mass balance from climatology."""
 
     # number of days per months to convert precip and compute pdd
+    # FIXME duplicates open_climate_tile, fix with interpolation
     months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
     months = xr.DataArray(months, coords={'month': temp.month})
-
-    # convert temperature to degC
-    if 'units' not in temp.attrs:
-        temp = temp.assign_attrs(units='degC')  # CHELSA-ERA5
-    elif temp.units == 'K':
-        temp = temp.assign_attrs(units='degC') - 273.15
-    else:
-        raise ValueError(f'Unknown temperature units {temp.units}.')
-
-    # convert precipitation to kg m-2
-    if 'units' not in prec.attrs:
-        prec = prec.assign_attrs(units='kg m-2')  # CHELSA-ERA5
-    elif prec.units == 'kg m-2 s-1':
-        # FIXME unit 'm' specific to ERA5 is a monthly average of daily totals
-        prec = prec.assign_attrs(units='kg m-2') * 3600 * 24 * months
-    elif prec.units == 'm':
-        # FIXME unit 'm' specific to ERA5 is a monthly average of daily totals
-        prec = prec.assign_attrs(units='kg m-2') * 1e3 * months
-    else:
-        raise ValueError(f'Unknown precipitation units {prec.units}.')
 
     # apply temperature offset
     temp = temp - xr.DataArray(range(12), coords=[range(12)], dims=['offset'])
@@ -346,7 +339,7 @@ def main(source='cw5e5'):
     dask.config.set({"distributed.comm.retry.count": 10})
     dask.config.set({"distributed.comm.timeouts.connect": '30'})
     dask.config.set({"distributed.comm.timeouts.tcp": '30'})
-    dask.distributed.Client(n_workers=8, threads_per_worker=1)
+    dask.distributed.Client(n_workers=4, threads_per_worker=1)
 
     # create directories if missing
     # FIXME only create as needed
