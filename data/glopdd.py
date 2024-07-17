@@ -260,8 +260,8 @@ def open_interp_stdev(temp, freq='day'):
     """Open interpolated ERA5 standard deviation."""
 
     # open era5 standard deviation
-    da = xr.open_dataarray(
-        f'external/era5/clim/era5.t2m.{freq}.8110.std.nc', chunks={})
+    filepath = aggregate_era5_std(freq=freq)
+    da = xr.open_dataarray(filepath, chunks={})
 
     # align coordinate names and values to cw5e5
     if freq == 'day':
