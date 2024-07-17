@@ -263,6 +263,8 @@ def main():
         '-f', '--freq', choices=['day', 'hour'], default='day')
     parser.add_argument(
         '-s', '--source', choices=['cera5', 'cw5e5'], default='cw5e5')
+    parser.add_argument(
+        '-t', '--tiles', action='extend', metavar='n30e000', nargs='*')
     args = parser.parse_args()
 
     # warn if netCDF >= 1.6.1 (https://github.com/pydata/xarray/issues/7079)
@@ -294,6 +296,10 @@ def main():
         llat = f'{"n" if (lat >= 0) else "s"}{abs(lat):02d}'
         llon = f'{"e" if (lon >= 0) else "w"}{abs(lon):03d}'
         tile = llat + llon
+
+        # FIXME get list of tiles, then loop on tiles
+        if args.tiles is not None and tile not in args.tiles:
+            continue
 
         # unless file exists
         filepath = f'processed/glopdd.git.{args.source}.{tile}.nc'
