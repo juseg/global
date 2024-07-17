@@ -137,76 +137,6 @@ def download_era5_monthly(year, var='t2m'):
 # Open input climatologies
 # ------------------------
 
-def open_climatology(source='era5', freq='day', test=False):
-    """Open temp, prec, stdv climatology on a consistent grid."""
-
-    # open climatology (600x600 chunks raise memory warning on rigil)
-    shortnames = ('t2m', 'tp') if source == 'era5' else ('tas', 'pr')
-    if source == 'cw5e5':
-        # FIXME combine cw5e5 data in preprocessing?
-        time = xr.DataArray(data=range(1, 13), dims='time')
-        temp, prec = (xr.open_mfdataset(
-            f'external/{source}/clim/{source}.{var}.day.8110.avg.??.nc',
-            concat_dim=time, combine='nested',
-            chunks={'lon': 300, 'lat': 300})[var] for var in shortnames)
-        stdv = xr.open_mfdataset(
-            f'external/{source}/clim/{source}.tas.day.8110.std.??.nc',
-            concat_dim=time, combine='nested',
-            chunks={'lon': 300, 'lat': 300}).tas
-    else:
-        temp, prec = (xr.open_dataset(
-            f'external/{source}/clim/{source}.{var}.mon.8110.avg.nc',
-            chunks={'x': 300, 'y': 300})[var] for var in shortnames)
-
-    # homogenize coordinate names to cera5 data
-    # FIXME default to era5 (month, longitude, latitude) or cw5e5 (lat, lon)
-    if source == 'era5':
-        temp = temp.rename(month='time', longitude='x', latitude='y')
-        prec = prec.rename(month='time', longitude='x', latitude='y')
-        temp['x'] = (temp.x + 180) % 360 - 180
-        prec['x'] = (prec.x + 180) % 360 - 180
-        temp = temp.drop('time')
-        prec = prec.drop('time')
-    elif source == 'cw5e5':
-        temp = temp.rename(lon='x', lat='y')
-        prec = prec.rename(lon='x', lat='y')
-        stdv = stdv.rename(lon='x', lat='y')
-
-    # crop a small region for a test
-    if test:
-        mask = (5 < temp.x) & (temp.x < 10) & (43 < temp.y) & (temp.y < 48)
-        temp = temp.where(mask, drop=True)
-        prec = prec.where(mask, drop=True)
-
-    # FIXME this function has become a mess...
-    if source == 'cw5e5':
-        return temp, prec, stdv
-
-    # load era5 standard deviation
-    # FIXME also use cw5e5 standard deviation
-    with xr.open_dataarray(
-            f'external/era5/clim/era5.t2m.{freq}.8110.std.nc') as era5:
-        if freq == 'day':
-            era5 = era5.rename(month='time', lon='x', lat='y')
-            era5 = era5.drop(['realization', 'time'])
-        else:
-            era5 = era5.rename(month='time', longitude='x', latitude='y')
-            era5['x'] = (era5.x + 180) % 360 - 180
-            era5 = era5.drop('time')
-
-    # interpolate to temperature grid (interp loads all chunks by default
-    # overloading the memory https://github.com/pydata/xarray/issues/6799)
-    # FIXME: could perhaps use interp_like if coordinates are consistent?
-    if source == 'era5':
-        stdv = era5.chunk({'x': 300, 'y': 300})
-    else:
-        stdv = temp.map_blocks(
-            lambda array: era5.interp(x=array.x, y=array.y), template=temp)
-
-    # return temperature, precipitation, standard deviation
-    return temp, prec, stdv
-
-
 def open_climate_tile(tile, chunks=None, source='cw5e5'):
     """Open temp, prec, stdv climatology for a 30x30 degree tile."""
 
@@ -219,6 +149,8 @@ def open_climate_tile(tile, chunks=None, source='cw5e5'):
     # align coordinate names and values to cw5e5 data
     # FIXME do that in hyoga?
     if source == 'cera5':
+        temp = temp.assign_coords(month=range(1, 13))
+        prec = prec.assign_coords(month=range(1, 13))
         temp = temp.rename(x='lon', y='lat')
         prec = prec.rename(x='lon', y='lat')
         temp['lat'] = temp.lat.astype('f4')
@@ -226,17 +158,55 @@ def open_climate_tile(tile, chunks=None, source='cw5e5'):
         prec['lat'] = prec.lat.astype('f4')
         prec['lon'] = prec.lon.astype('f4')
 
-    # open cw5e5 standard deviation
-    # FIXME use interpolated era5
-    prefix = prefix.replace(source, 'cw5e5')
-    stdv = xr.open_dataarray(f'{prefix}.tas.mon.8110.std.{tile}.nc', **kwargs)
+    # convert units to degC and kg m-2 (per month)
+    # FIXME assign cera5 units in hyoga, e.g.
+    # temp = temp.assign_attrs(units='K') + 273.15
+    # prec = prec.assign_attrs(units='kg m-2 s-1') / 24 / 3600 / months
+    if source == 'cera5':
+        assert 'units' not in temp.attrs
+        assert 'units' not in prec.attrs
+        temp = temp.assign_attrs(units='degC')
+        prec = prec.assign_attrs(units='kg m-2')
+    if source == 'cw5e5':
+        assert temp.units == 'K'
+        assert prec.units == 'kg m-2 s-1'
+        months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
+        months = xr.DataArray(months, coords={'month': temp.month})
+        temp = temp.assign_attrs(units='degC') - 273.15
+        prec = prec.assign_attrs(units='kg m-2') * 3600 * 24 * months
 
-    # load era5 standard deviation
-    # if source == 'cera5':
-    #     interp_era5_stdev()
+    # open matching or interpolated standard deviation
+    if source == 'cera5':
+        stdv = open_interp_stdev(temp)
+    else:
+        stdv = xr.open_dataarray(
+            f'{prefix}.tas.mon.8110.std.{tile}.nc', **kwargs)
 
     # return temperature, precipitation, standard deviation
     return temp, prec, stdv
+
+
+def open_interp_stdev(temp, freq='day'):
+    """Open interpolated ERA5 standard deviation."""
+
+    # open era5 standard deviation
+    filepath = aggregate_era5_std(freq=freq)
+    da = xr.open_dataarray(filepath, chunks={})
+
+    # align coordinate names and values to cw5e5
+    if freq == 'day':
+        da = da.drop_vars('realization')
+    else:
+        da = da.rename(longitude='lon', latitude='lat')
+        # da['lon'] = (da.lon + 180) % 360 - 180  # still needed?
+
+    # interpolate (for larger grids use map_blocks as interp loads all chunks
+    # overloading the memory https://github.com/pydata/xarray/issues/6799)
+    # temp.map_blocks(lambda a: da.interp_like(temp), template=temp)
+    stdv = da.interp_like(temp)
+
+    # return interpolated standard deviation
+    return stdv
 
 
 # Compute main outputs
@@ -246,28 +216,9 @@ def compute_mass_balance(temp, prec, stdv):
     """Compute mass balance from climatology."""
 
     # number of days per months to convert precip and compute pdd
+    # FIXME duplicates open_climate_tile, fix with interpolation
     months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
     months = xr.DataArray(months, coords={'month': temp.month})
-
-    # convert temperature to degC
-    if 'units' not in temp.attrs:
-        temp = temp.assign_attrs(units='degC')  # CHELSA-ERA5
-    elif temp.units == 'K':
-        temp = temp.assign_attrs(units='degC') - 273.15
-    else:
-        raise ValueError(f'Unknown temperature units {temp.units}.')
-
-    # convert precipitation to kg m-2
-    if 'units' not in prec.attrs:
-        prec = prec.assign_attrs(units='kg m-2')  # CHELSA-ERA5
-    elif prec.units == 'kg m-2 s-1':
-        # FIXME unit 'm' specific to ERA5 is a monthly average of daily totals
-        prec = prec.assign_attrs(units='kg m-2') * 3600 * 24 * months
-    elif prec.units == 'm':
-        # FIXME unit 'm' specific to ERA5 is a monthly average of daily totals
-        prec = prec.assign_attrs(units='kg m-2') * 1e3 * months
-    else:
-        raise ValueError(f'Unknown precipitation units {prec.units}.')
 
     # apply temperature offset
     temp = temp - xr.DataArray(range(12), coords=[range(12)], dims=['offset'])
@@ -318,7 +269,7 @@ def main(source='cw5e5'):
     dask.config.set({"distributed.comm.retry.count": 10})
     dask.config.set({"distributed.comm.timeouts.connect": '30'})
     dask.config.set({"distributed.comm.timeouts.tcp": '30'})
-    dask.distributed.Client(n_workers=8, threads_per_worker=1)
+    dask.distributed.Client(n_workers=4, threads_per_worker=1)
 
     # create directories if missing
     # FIXME only create as needed
