@@ -226,17 +226,38 @@ def open_climate_tile(tile, chunks=None, source='cw5e5'):
         prec['lat'] = prec.lat.astype('f4')
         prec['lon'] = prec.lon.astype('f4')
 
-    # open cw5e5 standard deviation
-    # FIXME use interpolated era5
-    prefix = prefix.replace(source, 'cw5e5')
-    stdv = xr.open_dataarray(f'{prefix}.tas.mon.8110.std.{tile}.nc', **kwargs)
-
-    # load era5 standard deviation
-    # if source == 'cera5':
-    #     interp_era5_stdev()
+    # open matching or interpolated standard deviation
+    if source == 'cera5':
+        stdv = open_interp_stdev(temp)
+    else:
+        stdv = xr.open_dataarray(
+            f'{prefix}.tas.mon.8110.std.{tile}.nc', **kwargs)
 
     # return temperature, precipitation, standard deviation
     return temp, prec, stdv
+
+
+def open_interp_stdev(temp, freq='day'):
+    """Open interpolated ERA5 standard deviation."""
+
+    # open era5 standard deviation
+    da = xr.open_dataarray(
+        f'external/era5/clim/era5.t2m.{freq}.8110.std.nc', chunks={})
+
+    # align coordinate names and values to cw5e5
+    if freq == 'day':
+        da = da.drop_vars('realization')
+    else:
+        da = da.rename(longitude='lon', latitude='lat')
+        # da['lon'] = (da.lon + 180) % 360 - 180  # still needed?
+
+    # interpolate (for larger grids use map_blocks as interp loads all chunks
+    # overloading the memory https://github.com/pydata/xarray/issues/6799)
+    # temp.map_blocks(lambda a: da.interp_like(temp), template=temp)
+    stdv = da.interp_like(temp)
+
+    # return interpolated standard deviation
+    return stdv
 
 
 # Compute main outputs
