@@ -279,14 +279,15 @@ def main():
             "consider downgrading (xarray issues #7079, #3961).")
 
     # set up dask distributed client or local progress bar
-    # FIXME use context manager instead
     if args.distributed:
         dask.config.set({"distributed.comm.retry.count": 10})
         dask.config.set({"distributed.comm.timeouts.connect": '30'})
         dask.config.set({"distributed.comm.timeouts.tcp": '30'})
-        dask.distributed.Client(n_workers=4, threads_per_worker=1)
+        Context = dask.distributed.Client
+        options = {'n_workers': 4, 'threads_per_worker': 1}
     else:
-        dask.diagnostics.ProgressBar().register()
+        Context = dask.diagnostics.ProgressBar
+        options = {}
 
     # create directories if missing
     # FIXME only create as needed
@@ -301,33 +302,36 @@ def main():
         f'{"n" if (lat >= 0) else "s"}{abs(lat):02d}'
         f'{"e" if (lon >= 0) else "w"}{abs(lon):03d}'
         for lat in range(-90, 90, 30) for lon in range(-180, 180, 30)]
-
-    # for each tile and corresponding path
     paths = [f'processed/glopdd.git.{args.source}.{tile}.nc' for tile in tiles]
-    for tile, filepath in zip(tiles, paths):
 
-        # unless file exists
-        if os.path.isfile(filepath) and not args.overwrite:
-            continue
-        print(f"Computing {filepath} ...")
+    # start distributed client of progress bar
+    with Context(**options):
 
-        # compute glacial threshold
-        temp, prec, stdv = open_climate_tile(
-            tile, freq=args.freq, source=args.source)
-        smb = compute_mass_balance(temp, prec, stdv)
-        git = compute_glacial_threshold(smb)
-        git.astype('f4').to_netcdf(filepath, encoding={'git': {'zlib': True}})
+        # for each tile and corresponding path
+        for tile, filepath in zip(tiles, paths):
 
-        # close files after computation (xarray #4131)
-        for da in temp, prec, stdv:
-            da.close()
+            # unless file exists
+            if args.overwrite or os.path.isfile(filepath):
 
-    # reopen and save global geotiff
-    filepath = f'processed/glopdd.git.{args.source}.tif'
-    print(f"Aggregating {filepath} ...")
-    git = xr.open_mfdataset(paths).git
-    git = git.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
-    git.rio.to_raster(filepath, compress='LZW', tiled=True)
+                # compute glacial threshold
+                print(f"Computing {filepath} ...")
+                temp, prec, stdv = open_climate_tile(
+                    tile, freq=args.freq, source=args.source)
+                smb = compute_mass_balance(temp, prec, stdv)
+                git = compute_glacial_threshold(smb)
+                git.astype('f4').to_netcdf(
+                    filepath, encoding={'git': {'zlib': True}})
+
+                # close files after computation (xarray #4131)
+                for da in temp, prec, stdv:
+                    da.close()
+
+        # reopen and save global geotiff
+        filepath = f'processed/glopdd.git.{args.source}.tif'
+        print(f"Aggregating {filepath} ...")
+        git = xr.open_mfdataset(paths).git
+        git = git.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
+        git.rio.to_raster(filepath, compress='LZW', tiled=True)
 
 
 if __name__ == '__main__':
