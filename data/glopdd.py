@@ -50,7 +50,7 @@ def aggregate_era5_std(freq='day', start=1981, end=2010):
         return filepath
 
     # compute monthly standard deviation
-    func = download_era5_daily if freq == 'day' else download_era5_hourly
+    func = {'day': download_era5_daily, 'hour': download_era5_hourly}[freq]
     paths = [func(a, m) for m in range(1, 13) for a in range(start, end+1)]
     with dask.distributed.Client():
         with xr.open_mfdataset(paths, chunks={'latitude': 103}) as ds:
@@ -135,12 +135,12 @@ def download_era5_monthly(year, var='t2m'):
 # Open input climatologies
 # ------------------------
 
-def open_climate_tile(tile, chunks=None, source='cw5e5'):
+def open_climate_tile(tile, freq='day', source='cw5e5'):
     """Open temp, prec, stdv climatology for a 30x30 degree tile."""
 
     # open climatology from hyoga cache directory
     prefix = os.path.join('~', '.cache', 'hyoga', source, 'clim', source)
-    kwargs = {'chunks': chunks or {}, 'decode_coords': 'all'}
+    kwargs = {'chunks': {}, 'decode_coords': 'all'}
     temp = xr.open_dataarray(f'{prefix}.tas.mon.8110.avg.{tile}.nc', **kwargs)
     prec = xr.open_dataarray(f'{prefix}.pr.mon.8110.avg.{tile}.nc', **kwargs)
 
@@ -175,7 +175,7 @@ def open_climate_tile(tile, chunks=None, source='cw5e5'):
 
     # open matching or interpolated standard deviation
     if source == 'cera5':
-        stdv = open_interp_stdev(temp)
+        stdv = open_interp_stdev(temp, freq=freq)
     else:
         stdv = xr.open_dataarray(
             f'{prefix}.tas.mon.8110.std.{tile}.nc', **kwargs)
@@ -188,7 +188,7 @@ def open_interp_stdev(temp, freq='day'):
     """Open interpolated ERA5 standard deviation."""
 
     # open era5 standard deviation
-    filepath = aggregate_era5_std(freq=freq)
+    filepath = aggregate_era5_std(freq='day')
     da = xr.open_dataarray(filepath, chunks={})
 
     # align coordinate names and values to cw5e5
@@ -260,6 +260,8 @@ def main():
     # parse command-line arguments
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        '-f', '--freq', choices=['day', 'hour'], default='day')
+    parser.add_argument(
         '-s', '--source', choices=['cera5', 'cw5e5'], default='cw5e5')
     args = parser.parse_args()
 
@@ -300,7 +302,8 @@ def main():
         print(f"Computing {filepath} ...")
 
         # compute glacial threshold
-        temp, prec, stdv = open_climate_tile(tile, source=args.source)
+        temp, prec, stdv = open_climate_tile(
+            tile, freq=args.freq, source=args.source)
         smb = compute_mass_balance(temp, prec, stdv)
         git = compute_glacial_threshold(smb)
         git.astype('f4').to_netcdf(filepath, encoding={'git': {'zlib': True}})
