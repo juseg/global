@@ -327,11 +327,13 @@ def main():
                     da.close()
 
         # reopen and save global geotiff
-        filepath = f'processed/glopdd.git.{args.source}.tif'
-        print(f"Aggregating {filepath} ...")
-        git = xr.open_mfdataset(paths).git
-        git = git.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
-        git.rio.to_raster(filepath, compress='LZW', tiled=True)
+        with xr.open_mfdataset(paths) as ds:
+            basename = f'processed/glopdd.git.{args.source}'
+            print(f"Assembling {basename}.nc ...")
+            ds.to_netcdf(f'{basename}.nc', encoding={'git': {'zlib': True}})
+            print(f"Assembling {basename}.tif ...")
+            git = ds.git.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
+            git.rio.to_raster(f'{basename}.nc', compress='LZW', tiled=True)
 
 
 if __name__ == '__main__':
