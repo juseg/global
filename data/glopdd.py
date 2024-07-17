@@ -254,11 +254,14 @@ def compute_glacial_threshold(smb, source='chelsa'):
 # Main program
 # ------------
 
-def main(source='cw5e5'):
+def main():
     """Main program called during execution."""
 
     # parse command-line arguments
-    argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        '-s', '--source', choices=['cera5', 'cw5e5'], default='cw5e5')
+    args = parser.parse_args()
 
     # warn if netCDF >= 1.6.1 (https://github.com/pydata/xarray/issues/7079)
     if netCDF4.__version__ >= '1.6.1':
@@ -291,13 +294,13 @@ def main(source='cw5e5'):
         tile = llat + llon
 
         # unless file exists
-        filepath = f'processed/glopdd.git.{source}.{tile}.nc'
+        filepath = f'processed/glopdd.git.{args.source}.{tile}.nc'
         if os.path.isfile(filepath):
             continue
         print(f"Computing {filepath} ...")
 
         # compute glacial threshold
-        temp, prec, stdv = open_climate_tile(tile, source=source)
+        temp, prec, stdv = open_climate_tile(tile, source=args.source)
         smb = compute_mass_balance(temp, prec, stdv)
         git = compute_glacial_threshold(smb)
         git.astype('f4').to_netcdf(filepath, encoding={'git': {'zlib': True}})
@@ -307,9 +310,9 @@ def main(source='cw5e5'):
             da.close()
 
     # reopen and save global geotiff
-    filepath = f'processed/glopdd.git.{source}.tif'
+    filepath = f'processed/glopdd.git.{args.source}.tif'
     print(f"Aggregating {filepath} ...")
-    git = xr.open_mfdataset(f'processed/glopdd.git.{source}.??0???0.nc').git
+    git = xr.open_mfdataset(f'{filepath[:-4]}.??0???0.nc').git
     git = git.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
     git.rio.to_raster(filepath, compress='LZW', tiled=True)
 
