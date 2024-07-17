@@ -216,9 +216,16 @@ def open_climate_tile(tile, chunks=None, source='cw5e5'):
     temp = xr.open_dataarray(f'{prefix}.tas.mon.8110.avg.{tile}.nc', **kwargs)
     prec = xr.open_dataarray(f'{prefix}.pr.mon.8110.avg.{tile}.nc', **kwargs)
 
+    # FIXME do we need to adjust units here?
+    # - cw5e5 has units K, kg m-2 s-1
+    # - cera5 has no units but uses degC, kg m-2, add_offset, scale_factor
+    # - hyoga atmosphere() converts chelsa units to kg m-2 day-1
+
     # align coordinate names and values to cw5e5 data
     # FIXME do that in hyoga?
     if source == 'cera5':
+        temp = temp.assign_coords(month=range(1, 13))
+        prec = prec.assign_coords(month=range(1, 13))
         temp = temp.rename(x='lon', y='lat')
         prec = prec.rename(x='lon', y='lat')
         temp['lat'] = temp.lat.astype('f4')
