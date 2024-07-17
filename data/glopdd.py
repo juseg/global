@@ -240,7 +240,7 @@ def compute_mass_balance(temp, prec, stdv):
     return smb
 
 
-def compute_glacial_threshold(smb, source='chelsa'):
+def compute_glacial_threshold(smb):
     """Compute glacial inception threshold from surface mass balance."""
 
     # use argmax because idxmax triggers rechunking
