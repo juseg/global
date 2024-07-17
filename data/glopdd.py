@@ -9,6 +9,7 @@ import argparse
 import os.path
 import warnings
 import cdsapi
+import dask.diagnostics
 import dask.distributed
 import netCDF4
 import numpy as np
@@ -260,6 +261,8 @@ def main():
     # parse command-line arguments
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        '-d', '--distributed', action='store_true', help='use distributed')
+    parser.add_argument(
         '-o', '--overwrite', action='store_true', help='replace old files')
     parser.add_argument(
         '-f', '--freq', choices=['day', 'hour'], default='day')
@@ -275,11 +278,15 @@ def main():
             "Frequent HDF errors have been reported on netCDF4 >= 1.6.1, "
             "consider downgrading (xarray issues #7079, #3961).")
 
-    # use dask distributed, retry on CommClosedError
-    dask.config.set({"distributed.comm.retry.count": 10})
-    dask.config.set({"distributed.comm.timeouts.connect": '30'})
-    dask.config.set({"distributed.comm.timeouts.tcp": '30'})
-    dask.distributed.Client(n_workers=4, threads_per_worker=1)
+    # set up dask distributed client or local progress bar
+    # FIXME use context manager instead
+    if args.distributed:
+        dask.config.set({"distributed.comm.retry.count": 10})
+        dask.config.set({"distributed.comm.timeouts.connect": '30'})
+        dask.config.set({"distributed.comm.timeouts.tcp": '30'})
+        dask.distributed.Client(n_workers=4, threads_per_worker=1)
+    else:
+        dask.diagnostics.ProgressBar().register()
 
     # create directories if missing
     # FIXME only create as needed
