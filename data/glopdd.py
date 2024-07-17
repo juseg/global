@@ -5,10 +5,8 @@
 
 """Compute glacial inception threshold from global climatologies."""
 
-import hashlib
-import json
+import argparse
 import os.path
-import urllib.request
 import warnings
 import cdsapi
 import dask.distributed
@@ -258,6 +256,9 @@ def compute_glacial_threshold(smb, source='chelsa'):
 
 def main(source='cw5e5'):
     """Main program called during execution."""
+
+    # parse command-line arguments
+    argparse.ArgumentParser(description=__doc__)
 
     # warn if netCDF >= 1.6.1 (https://github.com/pydata/xarray/issues/7079)
     if netCDF4.__version__ >= '1.6.1':
