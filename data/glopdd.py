@@ -287,22 +287,17 @@ def main():
     os.makedirs('external/era5/monthly', exist_ok=True)
     os.makedirs('processed', exist_ok=True)
 
-    # for corner coordinates of each tile
-    lats = range(-90, 90, 30)
-    lons = range(-180, 180, 30)
-    for (lat, lon) in ((lat, lon) for lat in lats for lon in lons):
+    # list climate tiles to process
+    tiles = args.tiles or [
+        f'{"n" if (lat >= 0) else "s"}{abs(lat):02d}'
+        f'{"e" if (lon >= 0) else "w"}{abs(lon):03d}'
+        for lat in range(-90, 90, 30) for lon in range(-180, 180, 30)]
 
-        # get tile name from literal lat and lon
-        llat = f'{"n" if (lat >= 0) else "s"}{abs(lat):02d}'
-        llon = f'{"e" if (lon >= 0) else "w"}{abs(lon):03d}'
-        tile = llat + llon
-
-        # FIXME get list of tiles, then loop on tiles
-        if args.tiles is not None and tile not in args.tiles:
-            continue
+    # for each tile and corresponding path
+    paths = [f'processed/glopdd.git.{args.source}.{tile}.nc' for tile in tiles]
+    for tile, filepath in zip(tiles, paths):
 
         # unless file exists
-        filepath = f'processed/glopdd.git.{args.source}.{tile}.nc'
         if os.path.isfile(filepath):
             continue
         print(f"Computing {filepath} ...")
@@ -321,7 +316,7 @@ def main():
     # reopen and save global geotiff
     filepath = f'processed/glopdd.git.{args.source}.tif'
     print(f"Aggregating {filepath} ...")
-    git = xr.open_mfdataset(f'{filepath[:-4]}.??0???0.nc').git
+    git = xr.open_mfdataset(paths).git
     git = git.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
     git.rio.to_raster(filepath, compress='LZW', tiled=True)
 
