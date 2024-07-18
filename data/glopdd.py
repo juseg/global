@@ -316,6 +316,7 @@ def main():
             if args.overwrite or not os.path.isfile(filepath):
 
                 # compute glacial threshold
+                # FIXME there is a memory error on cera5 serial
                 print(f"Computing {filepath} ...")
                 temp, prec, stdv = open_climate_tile(
                     tile, freq=args.freq, source=args.source)
