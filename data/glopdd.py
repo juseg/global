@@ -5,12 +5,13 @@
 
 """Compute glacial inception threshold from global climatologies."""
 
-import hashlib
-import json
+import argparse
 import os.path
-import urllib.request
+import tempfile
+import subprocess
 import warnings
 import cdsapi
+import dask.diagnostics
 import dask.distributed
 import netCDF4
 import numpy as np
@@ -52,7 +53,7 @@ def aggregate_era5_std(freq='day', start=1981, end=2010):
         return filepath
 
     # compute monthly standard deviation
-    func = download_era5_daily if freq == 'day' else download_era5_hourly
+    func = {'day': download_era5_daily, 'hour': download_era5_hourly}[freq]
     paths = [func(a, m) for m in range(1, 13) for a in range(start, end+1)]
     with dask.distributed.Client():
         with xr.open_mfdataset(paths, chunks={'latitude': 103}) as ds:
@@ -137,12 +138,12 @@ def download_era5_monthly(year, var='t2m'):
 # Open input climatologies
 # ------------------------
 
-def open_climate_tile(tile, chunks=None, source='cw5e5'):
+def open_climate_tile(tile, freq='day', source='cw5e5'):
     """Open temp, prec, stdv climatology for a 30x30 degree tile."""
 
     # open climatology from hyoga cache directory
     prefix = os.path.join('~', '.cache', 'hyoga', source, 'clim', source)
-    kwargs = {'chunks': chunks or {}, 'decode_coords': 'all'}
+    kwargs = {'chunks': {}, 'decode_coords': 'all'}
     temp = xr.open_dataarray(f'{prefix}.tas.mon.8110.avg.{tile}.nc', **kwargs)
     prec = xr.open_dataarray(f'{prefix}.pr.mon.8110.avg.{tile}.nc', **kwargs)
 
@@ -157,6 +158,11 @@ def open_climate_tile(tile, chunks=None, source='cw5e5'):
         temp['lon'] = temp.lon.astype('f4')
         prec['lat'] = prec.lat.astype('f4')
         prec['lon'] = prec.lon.astype('f4')
+
+        # split cera5 file chunks
+        # FIXME why are they different?
+        temp = temp.chunk(month=1)
+        prec = prec.chunk(month=1)
 
     # convert units to degC and kg m-2 (per month)
     # FIXME assign cera5 units in hyoga, e.g.
@@ -177,7 +183,7 @@ def open_climate_tile(tile, chunks=None, source='cw5e5'):
 
     # open matching or interpolated standard deviation
     if source == 'cera5':
-        stdv = open_interp_stdev(temp)
+        stdv = open_interp_stdev(temp, freq=freq)
     else:
         stdv = xr.open_dataarray(
             f'{prefix}.tas.mon.8110.std.{tile}.nc', **kwargs)
@@ -190,7 +196,7 @@ def open_interp_stdev(temp, freq='day'):
     """Open interpolated ERA5 standard deviation."""
 
     # open era5 standard deviation
-    filepath = aggregate_era5_std(freq=freq)
+    filepath = aggregate_era5_std(freq='day')
     da = xr.open_dataarray(filepath, chunks={})
 
     # align coordinate names and values to cw5e5
@@ -202,8 +208,8 @@ def open_interp_stdev(temp, freq='day'):
 
     # interpolate (for larger grids use map_blocks as interp loads all chunks
     # overloading the memory https://github.com/pydata/xarray/issues/6799)
-    # temp.map_blocks(lambda a: da.interp_like(temp), template=temp)
-    stdv = da.interp_like(temp)
+    # stdv = temp.map_blocks(lambda array: da.interp_like(array), template=temp)
+    stdv = da.interp_like(temp).chunk(**temp.chunksizes)
 
     # return interpolated standard deviation
     return stdv
@@ -241,7 +247,7 @@ def compute_mass_balance(temp, prec, stdv):
     return smb
 
 
-def compute_glacial_threshold(smb, source='chelsa'):
+def compute_glacial_threshold(smb):
     """Compute glacial inception threshold from surface mass balance."""
 
     # use argmax because idxmax triggers rechunking
@@ -256,8 +262,22 @@ def compute_glacial_threshold(smb, source='chelsa'):
 # Main program
 # ------------
 
-def main(source='cw5e5'):
+def main():
     """Main program called during execution."""
+
+    # parse command-line arguments
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        '-d', '--distributed', action='store_true', help='use distributed')
+    parser.add_argument(
+        '-o', '--overwrite', action='store_true', help='replace old files')
+    parser.add_argument(
+        '-f', '--freq', choices=['day', 'hour'], default='day')
+    parser.add_argument(
+        '-s', '--source', choices=['cera5', 'cw5e5'], default='cw5e5')
+    parser.add_argument(
+        '-t', '--tiles', action='extend', metavar='n30e000', nargs='*')
+    args = parser.parse_args()
 
     # warn if netCDF >= 1.6.1 (https://github.com/pydata/xarray/issues/7079)
     if netCDF4.__version__ >= '1.6.1':
@@ -265,11 +285,16 @@ def main(source='cw5e5'):
             "Frequent HDF errors have been reported on netCDF4 >= 1.6.1, "
             "consider downgrading (xarray issues #7079, #3961).")
 
-    # use dask distributed, retry on CommClosedError
-    dask.config.set({"distributed.comm.retry.count": 10})
-    dask.config.set({"distributed.comm.timeouts.connect": '30'})
-    dask.config.set({"distributed.comm.timeouts.tcp": '30'})
-    dask.distributed.Client(n_workers=4, threads_per_worker=1)
+    # set up dask distributed client or local progress bar
+    if args.distributed:
+        dask.config.set({"distributed.comm.retry.count": 10})
+        dask.config.set({"distributed.comm.timeouts.connect": '30'})
+        dask.config.set({"distributed.comm.timeouts.tcp": '30'})
+        Context = dask.distributed.Client
+        options = {'n_workers': 4, 'threads_per_worker': 1}
+    else:
+        Context = dask.diagnostics.ProgressBar
+        options = {}
 
     # create directories if missing
     # FIXME only create as needed
@@ -279,38 +304,58 @@ def main(source='cw5e5'):
     os.makedirs('external/era5/monthly', exist_ok=True)
     os.makedirs('processed', exist_ok=True)
 
-    # for corner coordinates of each tile
-    lats = range(-90, 90, 30)
-    lons = range(-180, 180, 30)
-    for (lat, lon) in ((lat, lon) for lat in lats for lon in lons):
+    # list climate tiles to process
+    tiles = args.tiles or [
+        f'{"n" if (lat >= 0) else "s"}{abs(lat):02d}'
+        f'{"e" if (lon >= 0) else "w"}{abs(lon):03d}'
+        for lat in range(-90, 90, 30) for lon in range(-180, 180, 30)]
+    paths = [f'processed/glopdd.git.{args.source}.{tile}.nc' for tile in tiles]
 
-        # get tile name from literal lat and lon
-        llat = f'{"n" if (lat >= 0) else "s"}{abs(lat):02d}'
-        llon = f'{"e" if (lon >= 0) else "w"}{abs(lon):03d}'
-        tile = llat + llon
+    # start distributed client of progress bar
+    with Context(**options):
 
-        # unless file exists
-        filepath = f'processed/glopdd.git.{source}.{tile}.nc'
-        if os.path.isfile(filepath):
-            continue
-        print(f"Computing {filepath} ...")
+        # for each tile and corresponding path
+        for tile, filepath in zip(tiles, paths):
 
-        # compute glacial threshold
-        temp, prec, stdv = open_climate_tile(tile, source=source)
-        smb = compute_mass_balance(temp, prec, stdv)
-        git = compute_glacial_threshold(smb)
-        git.astype('f4').to_netcdf(filepath, encoding={'git': {'zlib': True}})
+            # unless file exists
+            if args.overwrite or not os.path.isfile(filepath):
 
-        # close files after computation (xarray #4131)
-        for da in temp, prec, stdv:
-            da.close()
+                # compute glacial threshold
+                print(f"Computing {filepath} ...")
+                temp, prec, stdv = open_climate_tile(
+                    tile, freq=args.freq, source=args.source)
+                smb = compute_mass_balance(temp, prec, stdv)
+                git = compute_glacial_threshold(smb)
+                git.astype('f4').to_netcdf(
+                    filepath, encoding={'git': {'zlib': True}})
 
-    # reopen and save global geotiff
-    filepath = f'processed/glopdd.git.{source}.tif'
-    print(f"Aggregating {filepath} ...")
-    git = xr.open_mfdataset(f'processed/glopdd.git.{source}.??0???0.nc').git
-    git = git.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
-    git.rio.to_raster(filepath, compress='LZW', tiled=True)
+                # close files after computation (xarray #4131)
+                for da in temp, prec, stdv:
+                    da.close()
+
+        # reopen all tiles as global dataset
+        with xr.open_mfdataset(paths) as ds:
+
+            # save compressed geotiff
+            filepath = f'processed/glopdd.git.{args.source}.tif'
+            if args.overwrite or not os.path.isfile(filepath):
+                print(f"Assembling {filepath} ...")
+                git = ds.git.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
+                git.rio.to_raster(filepath, compress='LZW', tiled=True)
+
+            # save uncompressed netcdf
+            if args.overwrite or not os.path.isfile(filepath):
+                filepath = f'processed/glopdd.git.{args.source}.nc'
+                print(f"Assembling {filepath} ...")
+                ds.to_netcdf(filepath)
+
+                # nccopy compression beats xarray by far
+                print(f"Compressing {filepath} ...")
+                dirname, basename = os.path.split(filepath)
+                with tempfile.NamedTemporaryFile(
+                        dir=dirname, prefix=basename+'.') as tmp:
+                    subprocess.run(['nccopy', '-sd6', filepath, tmp.name])
+                    os.replace(tmp.name, filepath)
 
 
 if __name__ == '__main__':
