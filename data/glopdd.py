@@ -159,6 +159,11 @@ def open_climate_tile(tile, freq='day', source='cw5e5'):
         prec['lat'] = prec.lat.astype('f4')
         prec['lon'] = prec.lon.astype('f4')
 
+        # split cera5 file chunks
+        # FIXME why are they different?
+        temp = temp.chunk(month=1)
+        prec = prec.chunk(month=1)
+
     # convert units to degC and kg m-2 (per month)
     # FIXME assign cera5 units in hyoga, e.g.
     # temp = temp.assign_attrs(units='K') + 273.15
@@ -203,8 +208,8 @@ def open_interp_stdev(temp, freq='day'):
 
     # interpolate (for larger grids use map_blocks as interp loads all chunks
     # overloading the memory https://github.com/pydata/xarray/issues/6799)
-    # temp.map_blocks(lambda a: da.interp_like(temp), template=temp)
-    stdv = da.interp_like(temp)
+    # stdv = temp.map_blocks(lambda array: da.interp_like(array), template=temp)
+    stdv = da.interp_like(temp).chunk(**temp.chunksizes)
 
     # return interpolated standard deviation
     return stdv
@@ -316,7 +321,6 @@ def main():
             if args.overwrite or not os.path.isfile(filepath):
 
                 # compute glacial threshold
-                # FIXME there is a memory error on cera5 serial
                 print(f"Computing {filepath} ...")
                 temp, prec, stdv = open_climate_tile(
                     tile, freq=args.freq, source=args.source)
