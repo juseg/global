@@ -334,22 +334,24 @@ def main():
 
             # save compressed geotiff
             filepath = f'processed/glopdd.git.{args.source}.tif'
-            print(f"Assembling {filepath} ...")
-            git = ds.git.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
-            git.rio.to_raster(filepath, compress='LZW', tiled=True)
+            if args.overwrite or not os.path.isfile(filepath):
+                print(f"Assembling {filepath} ...")
+                git = ds.git.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
+                git.rio.to_raster(filepath, compress='LZW', tiled=True)
 
             # save uncompressed netcdf
-            filepath = f'processed/glopdd.git.{args.source}.nc'
-            print(f"Assembling {filepath} ...")
-            ds.to_netcdf(filepath)
+            if args.overwrite or not os.path.isfile(filepath):
+                filepath = f'processed/glopdd.git.{args.source}.nc'
+                print(f"Assembling {filepath} ...")
+                ds.to_netcdf(filepath)
 
-        # nccopy compression beats xarray by far
-        print(f"Compressing {filepath} ...")
-        dirname, basename = os.path.split(filepath)
-        with tempfile.NamedTemporaryFile(
-                dir=dirname, prefix=basename+'.') as tmp:
-            subprocess.run(['nccopy', '-sd6', filepath, tmp.name])
-            os.replace(tmp.name, filepath)
+                # nccopy compression beats xarray by far
+                print(f"Compressing {filepath} ...")
+                dirname, basename = os.path.split(filepath)
+                with tempfile.NamedTemporaryFile(
+                        dir=dirname, prefix=basename+'.') as tmp:
+                    subprocess.run(['nccopy', '-sd6', filepath, tmp.name])
+                    os.replace(tmp.name, filepath)
 
 
 if __name__ == '__main__':
