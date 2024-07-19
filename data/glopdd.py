@@ -219,7 +219,7 @@ def open_interp_stdev(temp, freq='day'):
 # Compute main outputs
 # --------------------
 
-def compute_interp_climate(array, days=5):
+def compute_interp_climate(array, interp=73):
     """Compute interpolated climate on multiday resolution."""
 
     # add a day coordinate corresponding to middle of each month
@@ -233,19 +233,19 @@ def compute_interp_climate(array, days=5):
     array = xr.concat((before, array, after), 'day')
 
     # interpolate to sub-monthly resolution
-    array = array.interp(day=np.arange(1, 365, days))
+    array = array.interp(day=np.linspace(0, 365, interp+1)[:-1])
 
     # return interpolated array
     return array
 
 
-def compute_mass_balance(temp, prec, stdv, days=5):
+def compute_mass_balance(temp, prec, stdv, interp=73):
     """Compute mass balance from climatology."""
 
     # intepolate chunked climatology
-    temp = compute_interp_climate(temp.chunk(lat=300, lon=300), days=days)
-    prec = compute_interp_climate(prec.chunk(lat=300, lon=300), days=days)
-    stdv = compute_interp_climate(stdv.chunk(lat=300, lon=300), days=days)
+    temp = compute_interp_climate(temp.chunk(lat=300, lon=300), interp=interp)
+    prec = compute_interp_climate(prec.chunk(lat=300, lon=300), interp=interp)
+    stdv = compute_interp_climate(stdv.chunk(lat=300, lon=300), interp=interp)
 
     # apply temperature offset
     temp = temp - xr.DataArray(range(12), coords=[range(12)], dims=['offset'])
@@ -260,7 +260,7 @@ def compute_mass_balance(temp, prec, stdv, days=5):
     melt = ddf * teff
 
     # integrate surface mass balance in kg m-2
-    smb = (snow - melt).sum('day') * days
+    smb = (snow - melt).sum('day') * 365 / interp
     smb = smb.transpose('offset', 'lat', 'lon')
 
     # return surface mass balance
