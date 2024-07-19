@@ -243,9 +243,9 @@ def compute_mass_balance(temp, prec, stdv, days=5):
     """Compute mass balance from climatology."""
 
     # intepolate chunked climatology
-    temp = compute_interp_climate(temp, days=days)
-    prec = compute_interp_climate(prec, days=days)
-    stdv = compute_interp_climate(stdv, days=days)
+    temp = compute_interp_climate(temp.chunk(lat=300, lon=300), days=days)
+    prec = compute_interp_climate(prec.chunk(lat=300, lon=300), days=days)
+    stdv = compute_interp_climate(stdv.chunk(lat=300, lon=300), days=days)
 
     # apply temperature offset
     temp = temp - xr.DataArray(range(12), coords=[range(12)], dims=['offset'])
