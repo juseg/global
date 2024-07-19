@@ -250,18 +250,17 @@ def compute_mass_balance(temp, prec, stdv, days=5):
     # apply temperature offset
     temp = temp - xr.DataArray(range(12), coords=[range(12)], dims=['offset'])
 
-    # compute normalized temp and snow accumulation in kg m-2
+    # compute normalized temp and snow accumulation in kg m-2 day-1
     norm = temp / (2**0.5*stdv)
     snow = prec * sc.erfc(norm) / 2
 
-    # compute pdd and melt in kg m-2
+    # compute pdd and melt in kg m-2 day-1
     teff = (stdv/2**0.5) * (np.exp(-norm**2)/np.pi**0.5 + norm*sc.erfc(-norm))
     ddf = 3  # kg m-2 K-1 day-1 (~mm w.e. K-1 day-1)
-    pdd = teff * months
-    melt = ddf * pdd  # kg m-2
+    melt = ddf * teff
 
-    # surface mass balance in kg m-2
-    smb = (snow - melt).sum('month')
+    # integrate surface mass balance in kg m-2
+    smb = (snow - melt).sum('day') * days
     smb = smb.transpose('offset', 'lat', 'lon')
 
     # return surface mass balance
