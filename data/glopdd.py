@@ -173,13 +173,14 @@ def open_climate_tile(tile, freq='day', source='cw5e5'):
         assert 'units' not in prec.attrs
         temp = temp.assign_attrs(units='degC')
         prec = prec.assign_attrs(units='kg m-2')
+        months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
+        months = xr.DataArray(months, coords={'month': temp.month})
+        prec = prec.assign_attrs(units='kg m-2 day-1') / months
     if source == 'cw5e5':
         assert temp.units == 'K'
         assert prec.units == 'kg m-2 s-1'
-        months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
-        months = xr.DataArray(months, coords={'month': temp.month})
         temp = temp.assign_attrs(units='degC') - 273.15
-        prec = prec.assign_attrs(units='kg m-2') * 3600 * 24 * months
+        prec = prec.assign_attrs(units='kg m-2 day-1') * 3600 * 24
 
     # open matching or interpolated standard deviation
     if source == 'cera5':
