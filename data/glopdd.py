@@ -173,13 +173,14 @@ def open_climate_tile(tile, freq='day', source='cw5e5'):
         assert 'units' not in prec.attrs
         temp = temp.assign_attrs(units='degC')
         prec = prec.assign_attrs(units='kg m-2')
+        months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
+        months = xr.DataArray(months, coords={'month': temp.month})
+        prec = prec.assign_attrs(units='kg m-2 day-1') / months
     if source == 'cw5e5':
         assert temp.units == 'K'
         assert prec.units == 'kg m-2 s-1'
-        months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
-        months = xr.DataArray(months, coords={'month': temp.month})
         temp = temp.assign_attrs(units='degC') - 273.15
-        prec = prec.assign_attrs(units='kg m-2') * 3600 * 24 * months
+        prec = prec.assign_attrs(units='kg m-2 day-1') * 3600 * 24
 
     # open matching or interpolated standard deviation
     if source == 'cera5':
@@ -218,29 +219,48 @@ def open_interp_stdev(temp, freq='day'):
 # Compute main outputs
 # --------------------
 
-def compute_mass_balance(temp, prec, stdv):
+def compute_interp_climate(array, interp=73):
+    """Compute interpolated climate on multiday resolution."""
+
+    # add a day coordinate corresponding to middle of each month
+    months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
+    array = array.swap_dims({'month': 'day'}).drop_vars('month')
+    array = array.assign_coords(day=months.cumsum()-months[0]/2)
+
+    # add zeroth and thirteenth months for periodicity
+    before = array.isel(day=-1).assign_coords(day=array.day[0]-31)
+    after = array.isel(day=0).assign_coords(day=array.day[-1]+31)
+    array = xr.concat((before, array, after), 'day')
+
+    # interpolate to sub-monthly resolution
+    array = array.interp(day=np.linspace(0, 365, interp+1)[:-1])
+
+    # return interpolated array
+    return array
+
+
+def compute_mass_balance(temp, prec, stdv, interp=73):
     """Compute mass balance from climatology."""
 
-    # number of days per months to convert precip and compute pdd
-    # FIXME duplicates open_climate_tile, fix with interpolation
-    months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
-    months = xr.DataArray(months, coords={'month': temp.month})
+    # intepolate chunked climatology
+    temp = compute_interp_climate(temp.chunk(lat=300, lon=300), interp=interp)
+    prec = compute_interp_climate(prec.chunk(lat=300, lon=300), interp=interp)
+    stdv = compute_interp_climate(stdv.chunk(lat=300, lon=300), interp=interp)
 
     # apply temperature offset
     temp = temp - xr.DataArray(range(12), coords=[range(12)], dims=['offset'])
 
-    # compute normalized temp and snow accumulation in kg m-2
+    # compute normalized temp and snow accumulation in kg m-2 day-1
     norm = temp / (2**0.5*stdv)
     snow = prec * sc.erfc(norm) / 2
 
-    # compute pdd and melt in kg m-2
+    # compute pdd and melt in kg m-2 day-1
     teff = (stdv/2**0.5) * (np.exp(-norm**2)/np.pi**0.5 + norm*sc.erfc(-norm))
     ddf = 3  # kg m-2 K-1 day-1 (~mm w.e. K-1 day-1)
-    pdd = teff * months
-    melt = ddf * pdd  # kg m-2
+    melt = ddf * teff
 
-    # surface mass balance in kg m-2
-    smb = (snow - melt).sum('month')
+    # integrate surface mass balance in kg m-2
+    smb = (snow - melt).sum('day') * 365 / interp
     smb = smb.transpose('offset', 'lat', 'lon')
 
     # return surface mass balance
@@ -273,6 +293,8 @@ def main():
         '-o', '--overwrite', action='store_true', help='replace old files')
     parser.add_argument(
         '-f', '--freq', choices=['day', 'hour'], default='day')
+    parser.add_argument(
+        '-i', '--interp', default=73, type=int)
     parser.add_argument(
         '-s', '--source', choices=['cera5', 'cw5e5'], default='cw5e5')
     parser.add_argument(
@@ -324,7 +346,8 @@ def main():
                 print(f"Computing {filepath} ...")
                 temp, prec, stdv = open_climate_tile(
                     tile, freq=args.freq, source=args.source)
-                smb = compute_mass_balance(temp, prec, stdv)
+                smb = compute_mass_balance(
+                    temp, prec, stdv, interp=args.interp)
                 git = compute_glacial_threshold(smb)
                 git.astype('f4').to_netcdf(
                     filepath, encoding={'git': {'zlib': True}})
