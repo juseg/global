@@ -219,13 +219,33 @@ def open_interp_stdev(temp, freq='day'):
 # Compute main outputs
 # --------------------
 
-def compute_mass_balance(temp, prec, stdv):
+def compute_interp_climate(array, days=5):
+    """Compute interpolated climate on multiday resolution."""
+
+    # add a day coordinate corresponding to middle of each month
+    months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
+    array = array.swap_dims({'month': 'day'}).drop_vars('month')
+    array = array.assign_coords(day=months.cumsum()-months[0]/2)
+
+    # add zeroth and thirteenth months for periodicity
+    before = array.isel(day=-1).assign_coords(day=array.day[0]-31)
+    after = array.isel(day=0).assign_coords(day=array.day[-1]+31)
+    array = xr.concat((before, array, after), 'day')
+
+    # interpolate to sub-monthly resolution
+    array = array.interp(day=np.arange(1, 365, days))
+
+    # return interpolated array
+    return array
+
+
+def compute_mass_balance(temp, prec, stdv, days=5):
     """Compute mass balance from climatology."""
 
-    # number of days per months to convert precip and compute pdd
-    # FIXME duplicates open_climate_tile, fix with interpolation
-    months = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
-    months = xr.DataArray(months, coords={'month': temp.month})
+    # intepolate chunked climatology
+    temp = compute_interp_climate(temp, days=days)
+    prec = compute_interp_climate(prec, days=days)
+    stdv = compute_interp_climate(stdv, days=days)
 
     # apply temperature offset
     temp = temp - xr.DataArray(range(12), coords=[range(12)], dims=['offset'])
