@@ -239,7 +239,7 @@ def compute_interp_climate(array, interp=73):
     return array
 
 
-def compute_mass_balance(temp, prec, stdv, interp=73):
+def compute_mass_balance(temp, prec, stdv, interp=73, method='linear'):
     """Compute mass balance from climatology."""
 
     # intepolate chunked climatology
@@ -304,6 +304,8 @@ def main():
     parser.add_argument(
         '-i', '--interp', default=73, type=int)
     parser.add_argument(
+        '-m', '--method', choices=['linear', 'stdev'], default='linear')
+    parser.add_argument(
         '-s', '--source', choices=['cera5', 'cw5e5'], default='cw5e5')
     parser.add_argument(
         '-t', '--tiles', action='extend', metavar='n30e000', nargs='*')
@@ -355,7 +357,7 @@ def main():
                 temp, prec, stdv = open_climate_tile(
                     tile, freq=args.freq, source=args.source)
                 smb = compute_mass_balance(
-                    temp, prec, stdv, interp=args.interp)
+                    temp, prec, stdv, interp=args.interp, method=args.method)
                 git = compute_glacial_threshold(smb)
                 git.astype('f4').to_netcdf(
                     filepath, encoding={'git': {'zlib': True}})
