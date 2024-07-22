@@ -250,11 +250,19 @@ def compute_mass_balance(temp, prec, stdv, interp=73):
     # apply temperature offset
     temp = temp - xr.DataArray(range(12), coords=[range(12)], dims=['offset'])
 
-    # compute normalized temp and snow accumulation in kg m-2 day-1
-    norm = temp / (2**0.5*stdv)
-    snow = prec * sc.erfc(norm) / 2
+    # compute snow accumulation in kg m-2 day-1
+    method = 'linear'
+    median = 1  # temperature at which half of rain falls as snow
+    dispersion = 1  # half of range in which some rain falls as snow
+    if method == 'linear':  # classic piecewise-linear method
+        snow = prec * (0.5-(temp-median)/(2*dispersion)).clip(0, 1)
+    elif method == 'stdv':  # creative error-function method
+        snow = prec * 0.5*sc.erfc((temp-median)/(2**0.5*stdv))
+    else:
+        raise ValueError(f"Invalid snow fraction method {method}")
 
-    # compute pdd and melt in kg m-2 day-1
+    # compute effective temperature and melt in kg m-2 day-1
+    norm = temp / (2**0.5*stdv)
     teff = (stdv/2**0.5) * (np.exp(-norm**2)/np.pi**0.5 + norm*sc.erfc(-norm))
     ddf = 3  # kg m-2 K-1 day-1 (~mm w.e. K-1 day-1)
     melt = ddf * teff
