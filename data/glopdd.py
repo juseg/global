@@ -248,7 +248,8 @@ def compute_mass_balance(temp, prec, stdv, interp=73, method='linear'):
     stdv = compute_interp_climate(stdv.chunk(lat=300, lon=300), interp=interp)
 
     # apply temperature offset
-    temp = temp - xr.DataArray(range(12), coords=[range(12)], dims=['offset'])
+    offset = np.arange(-2, 16, 1)
+    temp = temp - xr.DataArray(offset, coords=[offset], dims=['offset'])
 
     # compute snow accumulation in kg m-2 day-1
     method = 'linear'
@@ -280,6 +281,7 @@ def compute_glacial_threshold(smb):
 
     # use argmax because idxmax triggers rechunking
     git = (smb > 0).argmax(dim='offset').where(smb.isel(offset=-1) > 0)
+    git = smb.offset[0] + git * (smb.offset[1]-smb.offset[0])
     git = git.rename('git')
     git.attrs.update(long_name='glacial inception threshold', units='K')
 
