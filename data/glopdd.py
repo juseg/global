@@ -279,6 +279,10 @@ def compute_mass_balance(temp, prec, stdv, interp=73, method='linear'):
 def compute_glacial_threshold(smb):
     """Compute glacial inception threshold from surface mass balance."""
 
+    # assert offset coordinate is regular and increasing
+    assert (smb.offset.diff('offset') == smb.offset.diff('offset')[0]).all()
+    assert smb.offset.diff('offset')[0] > 0
+
     # use argmax because idxmax triggers rechunking
     git = (smb > 0).argmax(dim='offset').where(smb.isel(offset=-1) > 0)
     git = smb.offset[0] + git * (smb.offset[1]-smb.offset[0])
