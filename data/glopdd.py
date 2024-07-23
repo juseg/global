@@ -243,12 +243,12 @@ def compute_mass_balance(temp, prec, stdv, interp=73, method='linear'):
     """Compute mass balance from climatology."""
 
     # intepolate chunked climatology
-    temp = compute_interp_climate(temp.chunk(lat=300, lon=300), interp=interp)
-    prec = compute_interp_climate(prec.chunk(lat=300, lon=300), interp=interp)
-    stdv = compute_interp_climate(stdv.chunk(lat=300, lon=300), interp=interp)
+    temp = compute_interp_climate(temp.chunk(lat=200, lon=200), interp=interp)
+    prec = compute_interp_climate(prec.chunk(lat=200, lon=200), interp=interp)
+    stdv = compute_interp_climate(stdv.chunk(lat=200, lon=200), interp=interp)
 
     # apply temperature offset
-    offset = np.arange(-2, 16, 1)
+    offset = np.arange(-4, 21, 1)
     temp = temp - xr.DataArray(offset, coords=[offset], dims=['offset'])
 
     # compute snow accumulation in kg m-2 day-1
