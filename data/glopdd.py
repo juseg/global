@@ -285,7 +285,7 @@ def compute_glacial_threshold(smb):
 
     # use argmax because idxmax triggers rechunking
     git = (smb > 0).argmax(dim='offset').where(smb.isel(offset=-1) > 0)
-    git = smb.offset[0] + git * (smb.offset[1]-smb.offset[0])
+    git = - smb.offset[0] - git * (smb.offset[1]-smb.offset[0])
     git = git.rename('git')
     git.attrs.update(long_name='glacial inception threshold', units='K')
 
