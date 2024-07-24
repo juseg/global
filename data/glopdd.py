@@ -280,8 +280,9 @@ def compute_glacial_threshold(smb):
     """Compute glacial inception threshold from surface mass balance."""
 
     # assert offset coordinate is regular and increasing
-    assert (smb.offset.diff('offset') == smb.offset.diff('offset')[0]).all()
-    assert smb.offset.diff('offset')[0] > 0
+    increments = smb.offset.diff('offset').astype('f4')
+    assert (increments == increments[0]).all()
+    assert increments[0] > 0
 
     # use argmax because idxmax triggers rechunking
     git = (smb > 0).argmax(dim='offset').where(smb.isel(offset=-1) > 0)
