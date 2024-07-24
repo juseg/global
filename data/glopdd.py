@@ -243,12 +243,13 @@ def compute_mass_balance(temp, prec, stdv, interp=73, method='linear'):
     """Compute mass balance from climatology."""
 
     # intepolate chunked climatology
-    temp = compute_interp_climate(temp.chunk(lat=300, lon=300), interp=interp)
-    prec = compute_interp_climate(prec.chunk(lat=300, lon=300), interp=interp)
-    stdv = compute_interp_climate(stdv.chunk(lat=300, lon=300), interp=interp)
+    temp = compute_interp_climate(temp.chunk(lat=200, lon=200), interp=interp)
+    prec = compute_interp_climate(prec.chunk(lat=200, lon=200), interp=interp)
+    stdv = compute_interp_climate(stdv.chunk(lat=200, lon=200), interp=interp)
 
     # apply temperature offset
-    temp = temp - xr.DataArray(range(12), coords=[range(12)], dims=['offset'])
+    offset = np.arange(-4, 21, 1)
+    temp = temp - xr.DataArray(offset, coords=[offset], dims=['offset'])
 
     # compute snow accumulation in kg m-2 day-1
     method = 'linear'
@@ -278,8 +279,13 @@ def compute_mass_balance(temp, prec, stdv, interp=73, method='linear'):
 def compute_glacial_threshold(smb):
     """Compute glacial inception threshold from surface mass balance."""
 
+    # assert offset coordinate is regular and increasing
+    assert (smb.offset.diff('offset') == smb.offset.diff('offset')[0]).all()
+    assert smb.offset.diff('offset')[0] > 0
+
     # use argmax because idxmax triggers rechunking
     git = (smb > 0).argmax(dim='offset').where(smb.isel(offset=-1) > 0)
+    git = - smb.offset[0] - git * (smb.offset[1]-smb.offset[0])
     git = git.rename('git')
     git.attrs.update(long_name='glacial inception threshold', units='K')
 
