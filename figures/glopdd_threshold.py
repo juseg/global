@@ -17,7 +17,8 @@ def main():
     axes = [fig.add_axes(rect) for rect in (
         [0, 0, 1, 1],
         [2/36, 5/18, 5/36, 5/18],
-        [14/36, 6.5/18, 5/36, 5/18])]
+        [14/36, 6.5/18, 5/36, 5/18],
+        [24.5/36, 5/18, 5/36, 5/18])]
     cax = fig.add_axes([17/36, 4.5/18, 5/36, .5/18])
 
 
@@ -29,7 +30,8 @@ def main():
         for ax, (region, bounds) in zip(axes, {
                 'World': [-180, -90, 180, 90],
                 'Patagonia': [-76.5, -52, -70.5, -46],
-                'Alps': [7.7, 46.2, 8.3, 46.8]}.items()):
+                'Bernese Alps': [7.7, 46.2, 8.3, 46.8],
+                'Japanese Alps': [137, 35, 139, 37]}.items()):
             west, south, east, north = bounds
 
             # select partial data
