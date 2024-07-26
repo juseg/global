@@ -7,6 +7,21 @@
 
 \documentclass[manuscript]{copernicus}
 
+% custom colours (colorbrewer2.org)
+\definecolor{Bu}{cmyk}{1.00,0.45,0.00,0.07}  % Blues
+\definecolor{Gn}{cmyk}{1.00,0.20,1.00,0.00}  % Greens
+\definecolor{Rd}{cmyk}{0.35,0.95,0.85,0.00}  % Reds
+\definecolor{Or}{cmyk}{0.35,0.75,1.00,0.00}  % Oranges
+\definecolor{Pu}{cmyk}{0.70,0.80,0.00,0.00}  % Purples
+\definecolor{Br}{cmyk}{0.40,0.75,1.00,0.00}  % YlOrBr
+
+% custom commands (remove before submission)
+\newcommand{\note}[1]{\textcolor{Or}{\emph{[\textbf{NOTE:} #1]}}}
+\newcommand{\todo}[1]{\textcolor{Rd}{\emph{[\textbf{TODO:} #1]}}}
+
+% color links (remove before submission)
+\hypersetup{colorlinks, citecolor=Bu, linkcolor=Bu, urlcolor=Bu}
+
 % figures directory
 \graphicspath{{../../figures/}}
 
