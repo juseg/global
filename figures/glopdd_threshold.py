@@ -5,8 +5,17 @@
 
 """Plot global PDD glacial inception threshold."""
 
+import numpy as np
 import xarray as xr
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+
+def cmaps(*args, n=256):
+    """Merge any number of color maps into one."""
+    name = ''.join(arg[:2] for arg in args)
+    values = np.linspace(0, 1, int(n/len(args)))
+    colors = np.vstack([mpl.colormaps[name](values) for name in args])
+    return mpl.colors.LinearSegmentedColormap.from_list(name, colors)
 
 
 def main():
@@ -20,7 +29,7 @@ def main():
         [14/36, 6.5/18, 5/36, 5/18],
         [23/36, 5/18, 5/36, 5/18])]
     cax = fig.add_axes([17/36, 4.5/18, 5/36, .5/18])
-
+    cmap = cmaps('Oranges', 'Blues')
 
     # open glacial inception threshold
     with xr.open_dataarray('../data/processed/glopdd.git.cw5e5.nc') as git:
@@ -48,8 +57,7 @@ def main():
             else:
                 kwargs = {'add_colorbar': False}
             sel.plot.imshow(
-                ax=ax, add_labels=False, cmap='plasma_r', vmin=-20, vmax=0,
-                **kwargs)
+                ax=ax, add_labels=False, cmap=cmap, vmin=-20, vmax=0, **kwargs)
 
             # set axes properties
             ax.set_aspect('equal')
