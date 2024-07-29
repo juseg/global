@@ -27,20 +27,8 @@ def main():
         git = git.sel(lat=slice(south, north), lon=slice(west, east))
         dem = dem.sel(lat=slice(south, north), lon=slice(west, east))
 
-        # asser coords are similar
-        xr.testing.assert_allclose(git.lon, dem.lon)
-        xr.testing.assert_allclose(git.lat, dem.lat)
-
-        # option 1: convert dem coords to f4
-        dem['lat'] = dem.lat.astype('f4')
-        dem['lon'] = dem.lon.astype('f4')
-
-        # option 2: align coordinates
+        # align coordinates
         dem = dem.reindex_like(git, method='nearest', tolerance=1e-5)
-
-        # assert coords are equal
-        xr.testing.assert_equal(git.lon, dem.lon)
-        xr.testing.assert_equal(git.lat, dem.lat)
 
         # for selected temperature change
         for delta, color in zip(
