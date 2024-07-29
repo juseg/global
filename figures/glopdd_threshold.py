@@ -56,6 +56,8 @@ def main():
                     'orientation': 'horizontal'}}
             else:
                 kwargs = {'add_colorbar': False}
+                axes[0].indicate_inset(
+                    [west, south, east-west, north-south], inset_ax=ax)
             sel.plot.imshow(
                 ax=ax, add_labels=False, cmap=cmap, vmin=-20, vmax=0, **kwargs)
 
