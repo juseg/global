@@ -13,7 +13,8 @@ def main():
     """Main program called during execution."""
 
     # initialize figure
-    fig, ax = plt.subplots(figsize=(160/25.4, 80/25.4))
+    fig = plt.figure(figsize=(160/25.4, 80/25.4))
+    ax = fig.add_axes([0.1, 0.15, 0.85, 0.75])
 
     # open inception threshold and elevation model
     with (
@@ -43,9 +44,9 @@ def main():
 
         # set axes properties
         ax.legend()
-        ax.set_title('glacial inception altitude')
+        ax.set_title('zonal median glacial inception altitude')
         ax.set_ylabel('altitude (m)')
-        ax.set_xlabel('latitude')
+        ax.set_xlabel('latitude (°)')
 
     # save figure
     fig.savefig(__file__[:-3], dpi=254)
