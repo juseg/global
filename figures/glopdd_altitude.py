@@ -22,10 +22,9 @@ def main():
         dem = dem.dem_latlong
 
         # select partial data for testing
-        west, south, east, north = 0, 30, 30, 60
-        west, south, east, north = -90, -60, -60, -30
-        git = git.sel(lat=slice(south, north), lon=slice(west, east))
-        dem = dem.sel(lat=slice(south, north), lon=slice(west, east))
+        # west, south, east, north = -90, -60, -60, -30
+        # git = git.sel(lat=slice(south, north), lon=slice(west, east))
+        # dem = dem.sel(lat=slice(south, north), lon=slice(west, east))
 
         # align coordinates
         dem = dem.reindex_like(git, method='nearest', tolerance=1e-5)
