@@ -23,56 +23,52 @@ def main():
 
     # initialize figure
     fig = plt.figure(figsize=(160/25.4, 80/25.4))
-    axes = [fig.add_axes(rect) for rect in (
-        [0, 0, 1, 1],
+    ax0 = fig.add_axes([0, 0, 1, 1])
+    insets = [fig.add_axes(rect) for rect in (
         [2/36, 5/18, 5/36, 5/18],
         [14/36, 6.5/18, 5/36, 5/18],
         [23/36, 5/18, 5/36, 5/18])]
     cax = fig.add_axes([17/36, 4.5/18, 5/36, .5/18])
-    cmap = cmaps('Oranges', 'Blues')
+    kwargs = {'cmap': cmaps('Oranges', 'Blues'), 'vmin': -20, 'vmax': 0}
 
     # open glacial inception threshold
     with xr.open_dataarray('../data/processed/glopdd.git.cw5e5.nc') as git:
         # git = git.where((-12 < git)*(git < 0))
 
+        # plot global map
+        git.isel(lat=slice(0, -1, 10), lon=slice(0, -1, 10)).plot.imshow(
+            ax=ax0, add_labels=False, cbar_ax=cax, cbar_kwargs={
+                'label': 'glacial inception threshold (K)',
+                'orientation': 'horizontal'}, **kwargs)
+
+        # set axes properties
+        ax0.set_aspect('equal')
+        ax0.set_xlim(-180, 180)
+        ax0.set_ylim(-90, 90)
+        ax0.set_xticks(range(-180, 180, 30))
+        ax0.set_yticks(range(-90, 90, 30))
+        cax.grid(False)
+
         # for each region
-        for ax, (region, bounds) in zip(axes, {
-                'World': [-180, -90, 180, 90],
+        for ax, (region, bounds) in zip(insets, {
                 'Patagonia': [-76.5, -52, -70.5, -46],
                 'Alps': [7.5, 46, 8.5, 47],
                 'Rwenzori': [29.5, 0, 30.5, 1]}.items()):
             west, south, east, north = bounds
 
-            # select partial data
-            if region == 'World':
-                sel = git.isel(lat=slice(0, -1, 10), lon=slice(0, -1, 10))
-                kwargs = {'cbar_ax': cax, 'cbar_kwargs': {
-                    'label': 'glacial inception threshold (K)',
-                    'orientation': 'horizontal'}}
-            else:
-                sel = git.sel(lat=slice(south, north), lon=slice(west, east))
-                kwargs = {'add_colorbar': False}
-                axes[0].indicate_inset(
-                    [west, south, east-west, north-south], inset_ax=ax)
+            # plot regional map
+            git.sel(lat=slice(south, north), lon=slice(west, east)).plot.imshow(
+                ax=ax, add_colorbar=False, add_labels=False, **kwargs)
 
-            # plot image map
-            sel.plot.imshow(
-                ax=ax, add_labels=False, cmap=cmap, vmin=-20, vmax=0, **kwargs)
+            # mark inset
+            ax0.indicate_inset(
+                [west, south, east-west, north-south], inset_ax=ax0)
 
             # set axes properties
             ax.set_aspect('equal')
-            ax.set_ylim(south, north)
-            ax.set_xlim(west, east)
-            if region == 'World':
-                ax.set_xticks(range(-180, 180, 30))
-                ax.set_yticks(range(-90, 90, 30))
-            else:
-                ax.set_title(region)
-                ax.xaxis.set_visible(False)
-                ax.yaxis.set_visible(False)
-
-        # set colorbar axes properties
-        cax.grid(False)
+            ax.set_title(region)
+            ax.xaxis.set_visible(False)
+            ax.yaxis.set_visible(False)
 
     # save figure
     fig.savefig(__file__[:-3], dpi=254)
