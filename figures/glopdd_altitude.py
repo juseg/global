@@ -18,9 +18,8 @@ def main():
     # open inception threshold and elevation model
     with (
             xr.open_dataarray('../data/processed/glopdd.git.cw5e5.nc') as git,
-            xr.open_dataarray(
-                '~/.cache/hyoga/cw5e5/'
-                'chelsa-w5e5_obsclim_orog_30arcsec_global.nc') as dem):
+            xr.open_dataset('~/.cache/hyoga/chelsa/dem_latlong.nc') as dem):
+        dem = dem.dem_latlong
 
         # select partial data for testing
         west, south, east, north = 0, 30, 30, 60
