@@ -42,18 +42,20 @@ def main():
         xr.testing.assert_equal(git.lon, dem.lon)
         xr.testing.assert_equal(git.lat, dem.lat)
 
-        # compute zonal altitude statistics
-        ela = dem.where(git == 0).quantile([0, 0.25, 0.5, 0.75, 1], dim='lon')
+        # for selected temperature change
+        for delta, color in zip(
+                [0, -5, -10], ['tab:blue', 'tab:orange', 'tab:gray']):
 
-        # plot interquantile ranges and median
-        color = 'tab:blue'
-        ax.fill_between(
-            ela.lat, *ela.sel(quantile=[0, 1]), alpha=0.2, color=color)
-        ax.fill_between(
-            ela.lat, *ela.sel(quantile=[0.25, 0.75]), alpha=0.325, color=color)
-        ax.plot(ela.lat, ela.sel(quantile=0.5), color=color)
+            # compute zonal altitude statistics
+            ela = dem.where(git == delta)
+            min, med, max = ela.quantile([1/4, 2/4, 3/4], dim='lon')
+
+            # plot interquartile range and median
+            ax.fill_between(med.lat, min, max, color=color, alpha=0.25)
+            ax.plot(med.lat, med, color=color, label=fr'{delta}$\,$K')
 
         # set axes properties
+        ax.legend()
         ax.set_title('glacial inception altitude')
         ax.set_ylabel('altitude (m)')
         ax.set_xlabel('latitude')
