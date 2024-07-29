@@ -46,18 +46,16 @@ def main():
             # select partial data
             if region == 'World':
                 sel = git.isel(lat=slice(0, -1, 10), lon=slice(0, -1, 10))
-            else:
-                sel = git.sel(lat=slice(south, north), lon=slice(west, east))
-
-            # plot image map
-            if region == 'World':
                 kwargs = {'cbar_ax': cax, 'cbar_kwargs': {
                     'label': 'glacial inception threshold (K)',
                     'orientation': 'horizontal'}}
             else:
+                sel = git.sel(lat=slice(south, north), lon=slice(west, east))
                 kwargs = {'add_colorbar': False}
                 axes[0].indicate_inset(
                     [west, south, east-west, north-south], inset_ax=ax)
+
+            # plot image map
             sel.plot.imshow(
                 ax=ax, add_labels=False, cmap=cmap, vmin=-20, vmax=0, **kwargs)
 
