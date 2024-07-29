@@ -9,7 +9,7 @@ Creative Commons Attribution-ShareAlike 4.0 International License
 * [data](data): Data processing scripts (Python, Bash).
 
   - [data/glopdd.py](data/glopdd.py):
-    Global glaciation threshold from positive degree day modelling.
+    Global glacial inception threshold from positive degree-days.
     <!-- + v1, *Zenodo*, <https://doi.org/10.5281/zenodo.xxxxxxx>, 20xx. -->
 
 <!-- * [articles](articles): Journal articles (LaTeX). -->
