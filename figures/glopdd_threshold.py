@@ -39,7 +39,7 @@ def main():
         for ax, (region, bounds) in zip(axes, {
                 'World': [-180, -90, 180, 90],
                 'Patagonia': [-76.5, -52, -70.5, -46],
-                'Alps': [7.7, 46.2, 8.3, 46.8],
+                'Alps': [7.5, 46, 8.5, 47],
                 'Rwenzori': [29.5, 0, 30.5, 1]}.items()):
             west, south, east, north = bounds
 
