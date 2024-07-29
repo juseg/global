@@ -27,7 +27,7 @@ def main():
     insets = [fig.add_axes(rect) for rect in (
         [2/36, 5/18, 5/36, 5/18],
         [14/36, 6.5/18, 5/36, 5/18],
-        [23/36, 5/18, 5/36, 5/18])]
+        [24.5/36, 5/18, 5/36, 5/18])]
     cax = fig.add_axes([17/36, 4.5/18, 5/36, .5/18])
     kwargs = {'cmap': cmaps('Oranges', 'Blues'), 'vmin': -20, 'vmax': 0}
 
@@ -62,7 +62,7 @@ def main():
 
             # mark inset
             ax0.indicate_inset(
-                [west, south, east-west, north-south], inset_ax=ax0)
+                [west, south, east-west, north-south], inset_ax=ax)
 
             # set axes properties
             ax.set_aspect('equal')
