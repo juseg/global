@@ -239,7 +239,8 @@ def compute_interp_climate(array, interp=73):
     return array
 
 
-def compute_mass_balance(temp, prec, stdv, interp=73, method='linear'):
+def compute_mass_balance(
+        temp, prec, stdv, interp=73, method='linear', precip='cp'):
     """Compute mass balance from climatology."""
 
     # intepolate chunked climatology
@@ -253,7 +254,8 @@ def compute_mass_balance(temp, prec, stdv, interp=73, method='linear'):
     temp = temp - offset
 
     # apply precipitation scaling
-    prec = prec * np.exp(-0.169/2.4*offset)
+    if precip == 'pp':
+        prec = prec * np.exp(-0.169/2.4*offset)
 
     # compute snow accumulation in kg m-2 day-1
     method = 'linear'
@@ -316,6 +318,8 @@ def main():
     parser.add_argument(
         '-m', '--method', choices=['linear', 'stdev'], default='linear')
     parser.add_argument(
+        '-p', '--precip', choices=['cp', 'pp'], default='cp')
+    parser.add_argument(
         '-s', '--source', choices=['cera5', 'cw5e5'], default='cw5e5')
     parser.add_argument(
         '-t', '--tiles', action='extend', metavar='n30e000', nargs='*')
@@ -367,7 +371,8 @@ def main():
                 temp, prec, stdv = open_climate_tile(
                     tile, freq=args.freq, source=args.source)
                 smb = compute_mass_balance(
-                    temp, prec, stdv, interp=args.interp, method=args.method)
+                    temp, prec, stdv, interp=args.interp, method=args.method,
+                    precip=args.precip)
                 git = compute_glacial_threshold(smb)
                 git.astype('f4').to_netcdf(
                     filepath, encoding={'git': {'zlib': True}})
