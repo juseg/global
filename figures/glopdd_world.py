@@ -9,6 +9,15 @@ import xarray as xr
 import matplotlib.pyplot as plt
 from glopdd_threshold import cmaps
 
+def open_git(source='cw5e5'):  # prec='cp', pdd=3
+    """Open glacial inception threshold."""
+    if source == 'cdiff':
+        return open_git('cera5') - open_git('cw5e5')
+    da = xr.open_dataarray(f'../data/processed/glopdd.git.{source}.nc')
+    da = da.sortby(da.lat, ascending=True)
+    return da
+
+
 def main():
     """Main program called during execution."""
 
@@ -22,19 +31,13 @@ def main():
     kwargs = {'cmap': cmaps('Oranges_r', 'Purples'), 'vmin': -10, 'vmax': 10}
 
     # open global inception threshold
-    prefix = '../data/processed/glopdd.git'
-    with (
-            xr.open_dataarray(prefix+'.cera5.nc', chunks={}) as cera5,
-            xr.open_dataarray(prefix+'.cw5e5.nc', chunks={}) as cw5e5):
+    with open_git('cdiff') as diff:
 
         # plot global map
-        # diff = cera5 - cw5e5
-        diff = -cw5e5 + cera5
         diff.isel(lat=slice(0, -1, 10), lon=slice(0, -1, 10)).plot.imshow(
             ax=ax0, add_labels=False, cbar_ax=cax, cbar_kwargs={
                 'label': 'inception threshold bias (K)',
                 'orientation': 'horizontal'}, **kwargs)
-        print(diff.lat)
 
         # set axes properties
         ax0.set_aspect('equal')
@@ -51,7 +54,6 @@ def main():
             west, south, east, north = bounds
 
             # plot regional map
-            print(diff.shape)
             diff.sel(
                     lat=slice(south, north), lon=slice(west, east)).plot.imshow(
                 ax=ax, add_colorbar=False, add_labels=False, **kwargs)
