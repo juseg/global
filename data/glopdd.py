@@ -357,7 +357,7 @@ def main():
         for lat in range(-90, 90, 30) for lon in range(-180, 180, 30)]
     # FIXME allow custom pdd factor
     prefix = f'processed/glopdd.git.{args.source}.{args.precip}.pdd3'
-    paths = [f'{prefix}.{tile}.nc' for tile in tiles]
+    paths = [f'{prefix}.tiles/{prefix}.{tile}.nc' for tile in tiles]
 
     # start distributed client of progress bar
     with Context(**options):
