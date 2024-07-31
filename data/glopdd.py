@@ -249,7 +249,11 @@ def compute_mass_balance(temp, prec, stdv, interp=73, method='linear'):
 
     # apply temperature offset
     offset = np.arange(-4, 21, 1)
-    temp = temp - xr.DataArray(offset, coords=[offset], dims=['offset'])
+    offset = xr.DataArray(offset, coords=[offset], dims=['offset'])
+    temp = temp - offset
+
+    # apply precipitation scaling
+    prec = prec * np.exp(-0.169/2.4*offset)
 
     # compute snow accumulation in kg m-2 day-1
     method = 'linear'
