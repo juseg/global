@@ -307,8 +307,6 @@ def main():
     # parse command-line arguments
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        '-d', '--distributed', action='store_true', help='use distributed')
-    parser.add_argument(
         '-o', '--overwrite', action='store_true', help='replace old files')
     parser.add_argument(
         '-d', '--ddf', default=3, type=int)
@@ -324,6 +322,8 @@ def main():
         '-s', '--source', choices=['cera5', 'cw5e5'], default='cw5e5')
     parser.add_argument(
         '-t', '--tiles', action='extend', metavar='n30e000', nargs='*')
+    parser.add_argument(
+        '-w', '--workers', default=None, type=int)
     args = parser.parse_args()
 
     # warn if netCDF >= 1.6.1 (https://github.com/pydata/xarray/issues/7079)
@@ -333,12 +333,12 @@ def main():
             "consider downgrading (xarray issues #7079, #3961).")
 
     # set up dask distributed client or local progress bar
-    if args.distributed:
+    if args.workers is not None:
         dask.config.set({"distributed.comm.retry.count": 10})
         dask.config.set({"distributed.comm.timeouts.connect": '30'})
         dask.config.set({"distributed.comm.timeouts.tcp": '30'})
         Context = dask.distributed.Client
-        options = {'n_workers': 4, 'threads_per_worker': 1}
+        options = {'n_workers': args.workers, 'threads_per_worker': 1}
     else:
         Context = dask.diagnostics.ProgressBar
         options = {}
