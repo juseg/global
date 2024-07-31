@@ -240,7 +240,7 @@ def compute_interp_climate(array, interp=73):
 
 
 def compute_mass_balance(
-        temp, prec, stdv, interp=73, method='linear', precip='cp'):
+        temp, prec, stdv, ddf=3, interp=73, method='linear', precip='cp'):
     """Compute mass balance from climatology."""
 
     # intepolate chunked climatology
@@ -271,8 +271,7 @@ def compute_mass_balance(
     # compute effective temperature and melt in kg m-2 day-1
     norm = temp / (2**0.5*stdv)
     teff = (stdv/2**0.5) * (np.exp(-norm**2)/np.pi**0.5 + norm*sc.erfc(-norm))
-    ddf = 3  # kg m-2 K-1 day-1 (~mm w.e. K-1 day-1)
-    melt = ddf * teff
+    melt = ddf * teff  # ddf is in kg m-2 K-1 day-1 (~mm w.e. K-1 day-1)
 
     # integrate surface mass balance in kg m-2
     smb = (snow - melt).sum('day') * 365 / interp
@@ -311,6 +310,8 @@ def main():
         '-d', '--distributed', action='store_true', help='use distributed')
     parser.add_argument(
         '-o', '--overwrite', action='store_true', help='replace old files')
+    parser.add_argument(
+        '-d', '--ddf', default=3, type=int)
     parser.add_argument(
         '-f', '--freq', choices=['day', 'hour'], default='day')
     parser.add_argument(
@@ -355,8 +356,7 @@ def main():
         f'{"n" if (lat >= 0) else "s"}{abs(lat):02d}'
         f'{"e" if (lon >= 0) else "w"}{abs(lon):03d}'
         for lat in range(-90, 90, 30) for lon in range(-180, 180, 30)]
-    # FIXME allow custom pdd factor
-    prefix = f'processed/glopdd.git.{args.source}.{args.precip}.pdd3'
+    prefix = f'processed/glopdd.git.{args.source}.{args.precip}.ddf{args.ddf}'
     paths = [f'{prefix}.tiles/{prefix}.{tile}.nc' for tile in tiles]
 
     # start distributed client of progress bar
@@ -373,8 +373,8 @@ def main():
                 temp, prec, stdv = open_climate_tile(
                     tile, freq=args.freq, source=args.source)
                 smb = compute_mass_balance(
-                    temp, prec, stdv, interp=args.interp, method=args.method,
-                    precip=args.precip)
+                    temp, prec, stdv, ddf=args.ddf, interp=args.interp,
+                    method=args.method, precip=args.precip)
                 git = compute_glacial_threshold(smb)
                 git.astype('f4').to_netcdf(
                     tilepath, encoding={'git': {'zlib': True}})
