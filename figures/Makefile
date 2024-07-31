@@ -16,7 +16,7 @@ PY = python
 
 # all python figures (except: asijap_domains asimis_domains)
 PY_FIGS = \
-    $(addprefix glopdd_, threshold)
+    $(addprefix glopdd_, altitude threshold)
 PY_FIGS := $(addsuffix .$(EXT), $(PY_FIGS))
 
 # all figures
