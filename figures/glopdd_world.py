@@ -9,11 +9,17 @@ import xarray as xr
 import matplotlib.pyplot as plt
 from glopdd_threshold import cmaps
 
-def open_git(source='cw5e5'):  # prec='cp', pdd=3
+def open_git(source='cw5e5', precip='cp', ddf=3):
     """Open glacial inception threshold."""
     if source == 'cdiff':
-        return open_git('cera5') - open_git('cw5e5')
-    da = xr.open_dataarray(f'../data/processed/glopdd.git.{source}.nc')
+        return open_git('cera5', precip, ddf) - open_git('cw5e5', precip, ddf)
+    if precip == 'dp':
+        return open_git(source, 'pp', ddf) - open_git(source, 'cp', ddf)
+    if ddf == 'd':
+        return open_git(source, precip, 5) - open_git(source, precip, 2)
+    da = xr.open_dataarray(
+        f'../data/processed/glopdd.git.{source}.{precip}.ddf{ddf}.nc',
+        chunks={})
     da = da.sortby(da.lat, ascending=True)
     return da
 
