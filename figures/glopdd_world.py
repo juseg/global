@@ -6,6 +6,9 @@
 """Plot global PDD glacial inception world map."""
 
 import argparse
+import multiprocessing
+import os.path
+import time
 import xarray as xr
 import matplotlib.pyplot as plt
 from glopdd_threshold import cmaps
@@ -42,11 +45,15 @@ def main():
             name[1:3], name, choices=choices, default=choices, nargs='+')
     args = parser.parse_args()
 
-    # plot and save figures
-    for source in args.source:
-        for precip in args.precip:
-            for ddf in args.ddf:
-                plot(source=source, precip=precip, ddf=ddf)
+    # iterable plot arguments excluding recursive diff
+    iterargs = [
+        (source, precip, ddf) for source in args.source
+        for precip in args.precip for ddf in args.ddf
+        if (source == 'cdiff') + (precip == 'dp') + (ddf == 'd') < 2]
+
+    # plot all frames in parallel
+    with multiprocessing.Pool(processes=2) as pool:
+        pool.starmap(save, iterargs)
 
 
 def plot(source='cw5e5', precip='cp', ddf=3):
@@ -108,8 +115,17 @@ def plot(source='cw5e5', precip='cp', ddf=3):
             ax.xaxis.set_visible(False)
             ax.yaxis.set_visible(False)
 
-    # save figure
-    fig.savefig(f'{__file__[:-3]}_{source}_{precip}_ddf{ddf}', dpi=254)
+    # return figure
+    return fig
+
+
+def save(source, precip, ddf):
+    """Plot and save figure."""
+    filename = f'{__file__[:-3]}_{source}_{precip}_ddf{ddf}'
+    print(f"[{time.strftime('%H:%M:%S')}] plotting {os.path.basename(filename)} ...")
+    fig = plot(source, precip, ddf)
+    fig.savefig(filename, dpi='figure')
+    plt.close(fig)
 
 
 if __name__ == '__main__':
