@@ -5,6 +5,7 @@
 
 """Plot global PDD glacial inception world map."""
 
+import argparse
 import xarray as xr
 import matplotlib.pyplot as plt
 from glopdd_threshold import cmaps
@@ -27,6 +28,16 @@ def open_git(source='cw5e5', precip='cp', ddf=3):
 def main():
     """Main program called during execution."""
 
+    # parse command-line arguments
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        '-d', '--ddf', default=3, type=int)
+    parser.add_argument(
+        '-p', '--precip', choices=['cp', 'dp', 'pp'], default='cp')
+    parser.add_argument(
+        '-s', '--source', choices=['cera5', 'cw5e5'], default='cw5e5')
+    args = parser.parse_args()
+
     # initialize figure
     fig = plt.figure(figsize=(160/25.4, 80/25.4))
     ax0 = fig.add_axes([0, 0, 1, 1])
@@ -37,7 +48,8 @@ def main():
     kwargs = {'cmap': cmaps('Oranges_r', 'Purples'), 'vmin': -10, 'vmax': 10}
 
     # open global inception threshold
-    with open_git('cdiff') as diff:
+    with open_git(**vars(args)) as diff:
+        print(diff)
 
         # plot global map
         diff.isel(lat=slice(0, -1, 10), lon=slice(0, -1, 10)).plot.imshow(
