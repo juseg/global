@@ -38,6 +38,13 @@ def main():
         '-s', '--source', choices=['cera5', 'cw5e5'], default='cw5e5')
     args = parser.parse_args()
 
+    # plot and save figure
+    plot(**vars(args))
+
+
+def plot(source='cw5e5', precip='cp', ddf=3):
+    """Make plot and save figure for given arguments."""
+
     # initialize figure
     fig = plt.figure(figsize=(160/25.4, 80/25.4))
     ax0 = fig.add_axes([0, 0, 1, 1])
@@ -47,10 +54,10 @@ def main():
     cax = fig.add_axes([14/36, 3.5/18, 6/36, .5/18])
 
     # prepare plot properties
-    if args.source == 'cdiff':
+    if source == 'cdiff':
         label = 'inception threshold bias (K)'
         props = {'cmap': cmaps('Oranges_r', 'Blues'), 'vmin': -10, 'vmax': 10}
-    elif args.precip == 'dp':
+    elif precip == 'dp':
         label = 'inception threshold difference (K)'
         props = {'cmap': cmaps('Oranges_r', 'Blues'), 'vmin': -10, 'vmax': 10}
     else:
@@ -58,8 +65,7 @@ def main():
         props = {'cmap': cmaps('Oranges', 'Blues'), 'vmin': -20, 'vmax': 0}
 
     # open global inception threshold
-    with open_git(**vars(args)) as diff:
-        print(diff)
+    with open_git(source=source, precip=precip, ddf=ddf) as diff:
 
         # plot global map
         diff.isel(lat=slice(0, -1, 10), lon=slice(0, -1, 10)).plot.imshow(
@@ -96,8 +102,7 @@ def main():
             ax.yaxis.set_visible(False)
 
     # save figure
-    fig.savefig(
-        f'{__file__[:-3]}_{args.source}_{args.precip}_ddf{args.ddf}', dpi=254)
+    fig.savefig(f'{__file__[:-3]}_{source}_{precip}_ddf{ddf}', dpi=254)
 
 
 if __name__ == '__main__':
