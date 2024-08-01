@@ -45,7 +45,17 @@ def main():
         [1/36, 2/18, 8/36, 8/18],
         [23/36, 2/18, 8/36, 8/18])]
     cax = fig.add_axes([14/36, 3.5/18, 6/36, .5/18])
-    kwargs = {'cmap': cmaps('Oranges_r', 'Purples'), 'vmin': -10, 'vmax': 10}
+
+    # prepare plot properties
+    if args.source == 'cdiff':
+        label = 'inception threshold bias (K)'
+        props = {'cmap': cmaps('Oranges_r', 'Blues'), 'vmin': -10, 'vmax': 10}
+    elif args.precip == 'dp':
+        label = 'inception threshold difference (K)'
+        props = {'cmap': cmaps('Oranges_r', 'Blues'), 'vmin': -10, 'vmax': 10}
+    else:
+        label = 'glacial inception threshold (K)'
+        props = {'cmap': cmaps('Oranges', 'Blues'), 'vmin': -20, 'vmax': 0}
 
     # open global inception threshold
     with open_git(**vars(args)) as diff:
@@ -54,8 +64,7 @@ def main():
         # plot global map
         diff.isel(lat=slice(0, -1, 10), lon=slice(0, -1, 10)).plot.imshow(
             ax=ax0, add_labels=False, cbar_ax=cax, cbar_kwargs={
-                'label': 'inception threshold bias (K)',
-                'orientation': 'horizontal'}, **kwargs)
+                'label': label, 'orientation': 'horizontal'}, **props)
 
         # set axes properties
         ax0.set_aspect('equal')
@@ -74,7 +83,7 @@ def main():
             # plot regional map
             diff.sel(
                     lat=slice(south, north), lon=slice(west, east)).plot.imshow(
-                ax=ax, add_colorbar=False, add_labels=False, **kwargs)
+                ax=ax, add_colorbar=False, add_labels=False, **props)
 
             # mark inset
             ax0.indicate_inset(
