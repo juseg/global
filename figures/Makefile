@@ -15,6 +15,7 @@ EXT = pdf
 PY = python
 
 # all python figures (except: asijap_domains asimis_domains)
+# FIXME variable output to glopdd_world
 PY_FIGS = \
     $(addprefix glopdd_, altitude threshold)
 PY_FIGS := $(addsuffix .$(EXT), $(PY_FIGS))

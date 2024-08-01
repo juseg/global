@@ -96,7 +96,8 @@ def main():
             ax.yaxis.set_visible(False)
 
     # save figure
-    fig.savefig(__file__[:-3], dpi=254)
+    fig.savefig(
+        f'{__file__[:-3]}_{args.source}_{args.precip}_ddf{args.ddf}', dpi=254)
 
 
 if __name__ == '__main__':
