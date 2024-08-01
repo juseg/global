@@ -10,6 +10,7 @@ import xarray as xr
 import matplotlib.pyplot as plt
 from glopdd_threshold import cmaps
 
+
 def open_git(source='cw5e5', precip='cp', ddf=3):
     """Open glacial inception threshold."""
     if source == 'cdiff':
@@ -28,18 +29,24 @@ def open_git(source='cw5e5', precip='cp', ddf=3):
 def main():
     """Main program called during execution."""
 
+    # command-line arguments and choices
+    options = {
+        '--source': ['cdiff', 'cera5', 'cw5e5'],
+        '--precip': ['cp', 'dp', 'pp'],
+        '--ddf': [3]}
+
     # parse command-line arguments
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        '-d', '--ddf', default=3, type=int)
-    parser.add_argument(
-        '-p', '--precip', choices=['cp', 'dp', 'pp'], default='cp')
-    parser.add_argument(
-        '-s', '--source', choices=['cera5', 'cw5e5'], default='cw5e5')
+    for name, choices in options.items():
+        parser.add_argument(
+            name[1:3], name, choices=choices, default=choices, nargs='+')
     args = parser.parse_args()
 
-    # plot and save figure
-    plot(**vars(args))
+    # plot and save figures
+    for source in args.source:
+        for precip in args.precip:
+            for ddf in args.ddf:
+                plot(source=source, precip=precip, ddf=ddf)
 
 
 def plot(source='cw5e5', precip='cp', ddf=3):
