@@ -71,11 +71,11 @@ def plot(source='cw5e5', precip='cp', ddf=3):
 
     # prepare plot properties
     if source == 'cdiff':
-        label = 'inception threshold\nbias (K)'
-        props = {'cmap': cmaps('Oranges_r', 'Blues'), 'vmin': -10, 'vmax': 10}
+        label = r'CHELSA-2.1$-$CHELSA-W5E5' + '\ninception threshold (K)'
+        props = {'cmap': cmaps('Oranges_r', 'Blues')}
     elif precip == 'dp':
-        label = 'inception threshold\ndifference (K)'
-        props = {'cmap': cmaps('Oranges_r', 'Blues'), 'vmin': -10, 'vmax': 10}
+        label = r'scaled$-$constant precip' + '\ninception threshold (K)'
+        props = {'cmap': 'Oranges_r', 'vmax': 0}
     else:
         label = 'glacial inception\nthreshold (K)'
         props = {'cmap': cmaps('Oranges', 'Blues'), 'vmin': -20, 'vmax': 0}
