@@ -239,7 +239,8 @@ def compute_interp_climate(array, interp=73):
     return array
 
 
-def compute_mass_balance(temp, prec, stdv, interp=73, method='linear'):
+def compute_mass_balance(
+        temp, prec, stdv, ddf=3, interp=73, method='linear', precip='cp'):
     """Compute mass balance from climatology."""
 
     # intepolate chunked climatology
@@ -249,7 +250,12 @@ def compute_mass_balance(temp, prec, stdv, interp=73, method='linear'):
 
     # apply temperature offset
     offset = np.arange(-4, 21, 1)
-    temp = temp - xr.DataArray(offset, coords=[offset], dims=['offset'])
+    offset = xr.DataArray(offset, coords=[offset], dims=['offset'])
+    temp = temp - offset
+
+    # apply precipitation scaling
+    if precip == 'pp':
+        prec = prec * np.exp(-0.169/2.4*offset)
 
     # compute snow accumulation in kg m-2 day-1
     method = 'linear'
@@ -265,8 +271,7 @@ def compute_mass_balance(temp, prec, stdv, interp=73, method='linear'):
     # compute effective temperature and melt in kg m-2 day-1
     norm = temp / (2**0.5*stdv)
     teff = (stdv/2**0.5) * (np.exp(-norm**2)/np.pi**0.5 + norm*sc.erfc(-norm))
-    ddf = 3  # kg m-2 K-1 day-1 (~mm w.e. K-1 day-1)
-    melt = ddf * teff
+    melt = ddf * teff  # ddf is in kg m-2 K-1 day-1 (~mm w.e. K-1 day-1)
 
     # integrate surface mass balance in kg m-2
     smb = (snow - melt).sum('day') * 365 / interp
@@ -302,9 +307,9 @@ def main():
     # parse command-line arguments
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        '-d', '--distributed', action='store_true', help='use distributed')
-    parser.add_argument(
         '-o', '--overwrite', action='store_true', help='replace old files')
+    parser.add_argument(
+        '-d', '--ddf', default=3, type=int)
     parser.add_argument(
         '-f', '--freq', choices=['day', 'hour'], default='day')
     parser.add_argument(
@@ -312,9 +317,13 @@ def main():
     parser.add_argument(
         '-m', '--method', choices=['linear', 'stdev'], default='linear')
     parser.add_argument(
+        '-p', '--precip', choices=['cp', 'pp'], default='cp')
+    parser.add_argument(
         '-s', '--source', choices=['cera5', 'cw5e5'], default='cw5e5')
     parser.add_argument(
         '-t', '--tiles', action='extend', metavar='n30e000', nargs='*')
+    parser.add_argument(
+        '-w', '--workers', default=None, type=int)
     args = parser.parse_args()
 
     # warn if netCDF >= 1.6.1 (https://github.com/pydata/xarray/issues/7079)
@@ -324,12 +333,12 @@ def main():
             "consider downgrading (xarray issues #7079, #3961).")
 
     # set up dask distributed client or local progress bar
-    if args.distributed:
+    if args.workers is not None:
         dask.config.set({"distributed.comm.retry.count": 10})
         dask.config.set({"distributed.comm.timeouts.connect": '30'})
         dask.config.set({"distributed.comm.timeouts.tcp": '30'})
         Context = dask.distributed.Client
-        options = {'n_workers': 4, 'threads_per_worker': 1}
+        options = {'n_workers': args.workers, 'threads_per_worker': 1}
     else:
         Context = dask.diagnostics.ProgressBar
         options = {}
@@ -347,26 +356,28 @@ def main():
         f'{"n" if (lat >= 0) else "s"}{abs(lat):02d}'
         f'{"e" if (lon >= 0) else "w"}{abs(lon):03d}'
         for lat in range(-90, 90, 30) for lon in range(-180, 180, 30)]
-    paths = [f'processed/glopdd.git.{args.source}.{tile}.nc' for tile in tiles]
+    prefix = f'processed/glopdd.git.{args.source}.{args.precip}.ddf{args.ddf}'
+    paths = [f'{prefix}.tiles/{prefix}.{tile}.nc' for tile in tiles]
 
     # start distributed client of progress bar
     with Context(**options):
 
         # for each tile and corresponding path
-        for tile, filepath in zip(tiles, paths):
+        for tile, tilepath in zip(tiles, paths):
 
             # unless file exists
-            if args.overwrite or not os.path.isfile(filepath):
+            if args.overwrite or not os.path.isfile(tilepath):
 
                 # compute glacial threshold
-                print(f"Computing {filepath} ...")
+                print(f"Computing {tilepath} ...")
                 temp, prec, stdv = open_climate_tile(
                     tile, freq=args.freq, source=args.source)
                 smb = compute_mass_balance(
-                    temp, prec, stdv, interp=args.interp, method=args.method)
+                    temp, prec, stdv, ddf=args.ddf, interp=args.interp,
+                    method=args.method, precip=args.precip)
                 git = compute_glacial_threshold(smb)
                 git.astype('f4').to_netcdf(
-                    filepath, encoding={'git': {'zlib': True}})
+                    tilepath, encoding={'git': {'zlib': True}})
 
                 # close files after computation (xarray #4131)
                 for da in temp, prec, stdv:
@@ -376,25 +387,24 @@ def main():
         with xr.open_mfdataset(paths) as ds:
 
             # save compressed geotiff
-            filepath = f'processed/glopdd.git.{args.source}.tif'
-            if args.overwrite or not os.path.isfile(filepath):
-                print(f"Assembling {filepath} ...")
+            if args.overwrite or not os.path.isfile(f'{prefix}.tif'):
+                print(f"Assembling {f'{prefix}.tif'} ...")
                 git = ds.git.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
-                git.rio.to_raster(filepath, compress='LZW', tiled=True)
+                git.rio.to_raster(f'{prefix}.tif', compress='LZW', tiled=True)
 
             # save uncompressed netcdf
-            if args.overwrite or not os.path.isfile(filepath):
-                filepath = f'processed/glopdd.git.{args.source}.nc'
-                print(f"Assembling {filepath} ...")
-                ds.to_netcdf(filepath)
+            if args.overwrite or not os.path.isfile(f'{prefix}.nc'):
+                print(f"Assembling {f'{prefix}.nc'} ...")
+                ds.to_netcdf(f'{prefix}.nc')
 
                 # nccopy compression beats xarray by far
-                print(f"Compressing {filepath} ...")
-                dirname, basename = os.path.split(filepath)
+                print(f"Compressing {f'{prefix}.nc'} ...")
+                dirname, basename = os.path.split(f'{prefix}.nc')
                 with tempfile.NamedTemporaryFile(
                         dir=dirname, prefix=basename+'.') as tmp:
-                    subprocess.run(['nccopy', '-sd6', filepath, tmp.name])
-                    os.replace(tmp.name, filepath)
+                    subprocess.run(
+                        ['nccopy', '-sd6', f'{prefix}.nc', tmp.name])
+                    os.replace(tmp.name, f'{prefix}.nc')
 
 
 if __name__ == '__main__':
