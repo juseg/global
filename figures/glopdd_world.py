@@ -65,17 +65,19 @@ def plot(source='cw5e5', precip='cp', ddf=3):
     insets = [fig.add_axes(rect) for rect in (
         [1/36, 2/18, 8/36, 8/18],
         [23/36, 2/18, 8/36, 8/18])]
-    cax = fig.add_axes([14/36, 3.5/18, 6/36, .5/18])
+    ax0.add_patch(
+        plt.Rectangle((-50, -80), 90, 50, alpha=0.75, ec=str(2/3), fc='w'))
+    cax = fig.add_axes([14.5/36, 4.5/18, 6/36, .5/18])
 
     # prepare plot properties
     if source == 'cdiff':
-        label = 'inception threshold bias (K)'
+        label = 'inception threshold\nbias (K)'
         props = {'cmap': cmaps('Oranges_r', 'Blues'), 'vmin': -10, 'vmax': 10}
     elif precip == 'dp':
-        label = 'inception threshold difference (K)'
+        label = 'inception threshold\ndifference (K)'
         props = {'cmap': cmaps('Oranges_r', 'Blues'), 'vmin': -10, 'vmax': 10}
     else:
-        label = 'glacial inception threshold (K)'
+        label = 'glacial inception\nthreshold (K)'
         props = {'cmap': cmaps('Oranges', 'Blues'), 'vmin': -20, 'vmax': 0}
 
     # open global inception threshold
