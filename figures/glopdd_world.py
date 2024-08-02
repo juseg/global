@@ -52,7 +52,7 @@ def main():
         if (source == 'cdiff') + (precip == 'dp') + (ddf == 'd') < 2]
 
     # plot all frames in parallel
-    with multiprocessing.Pool(processes=2) as pool:
+    with multiprocessing.Pool() as pool:
         pool.starmap(save, iterargs)
 
 
