@@ -356,8 +356,9 @@ def main():
         f'{"n" if (lat >= 0) else "s"}{abs(lat):02d}'
         f'{"e" if (lon >= 0) else "w"}{abs(lon):03d}'
         for lat in range(-90, 90, 30) for lon in range(-180, 180, 30)]
-    prefix = f'processed/glopdd.git.{args.source}.{args.precip}.ddf{args.ddf}'
-    paths = [f'{prefix}.tiles/{prefix}.{tile}.nc' for tile in tiles]
+    prefix = f'glopdd.git.{args.source}.{args.precip}.ddf{args.ddf}'
+    paths = [f'processed/{prefix}.tiles/{prefix}.{tile}.nc' for tile in tiles]
+    os.makedirs(f'processed/{prefix}.tiles', exist_ok=True)
 
     # start distributed client of progress bar
     with Context(**options):
@@ -387,24 +388,26 @@ def main():
         with xr.open_mfdataset(paths) as ds:
 
             # save compressed geotiff
-            if args.overwrite or not os.path.isfile(f'{prefix}.tif'):
-                print(f"Assembling {f'{prefix}.tif'} ...")
+            filepath = f'processed/{prefix}.tif'
+            if args.overwrite or not os.path.isfile(filepath):
+                print(f"Assembling {filepath} ...")
                 git = ds.git.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
-                git.rio.to_raster(f'{prefix}.tif', compress='LZW', tiled=True)
+                git.rio.to_raster(filepath, compress='LZW', tiled=True)
 
             # save uncompressed netcdf
-            if args.overwrite or not os.path.isfile(f'{prefix}.nc'):
-                print(f"Assembling {f'{prefix}.nc'} ...")
-                ds.to_netcdf(f'{prefix}.nc')
+            filepath = f'processed/{prefix}.nc'
+            if args.overwrite or not os.path.isfile(filepath):
+                print(f"Assembling {filepath} ...")
+                ds.to_netcdf(filepath)
 
                 # nccopy compression beats xarray by far
-                print(f"Compressing {f'{prefix}.nc'} ...")
-                dirname, basename = os.path.split(f'{prefix}.nc')
+                print(f"Compressing {filepath} ...")
+                dirname, basename = os.path.split(filepath)
                 with tempfile.NamedTemporaryFile(
                         dir=dirname, prefix=basename+'.') as tmp:
                     subprocess.run(
-                        ['nccopy', '-sd6', f'{prefix}.nc', tmp.name])
-                    os.replace(tmp.name, f'{prefix}.nc')
+                        ['nccopy', '-sd6', filepath, tmp.name])
+                    os.replace(tmp.name, filepath)
 
 
 if __name__ == '__main__':
