@@ -32,24 +32,23 @@ def open_git(source='cw5e5', precip='cp', ddf=3):
 def main():
     """Main program called during execution."""
 
-    # command-line arguments and choices
-    options = {
-        '--source': ['cdiff', 'cera5', 'cw5e5'],
-        '--precip': ['cp', 'dp', 'pp'],
-        '--ddf': [3]}
+    # available data sources
+    sources = ['cera5', 'cw5e5', 'fdiff', 'pdiff', 'sdiff']
 
     # parse command-line arguments
     parser = argparse.ArgumentParser(description=__doc__)
-    for name, choices in options.items():
-        parser.add_argument(
-            name[1:3], name, choices=choices, default=choices, nargs='+')
+    parser.add_argument(
+        '-f', '--factor', choices=[3], default=[3], nargs='+')
+    parser.add_argument(
+        '-p', '--precip', choices=['cp', 'pp'], default=['cp'], nargs='+')
+    parser.add_argument(
+        '-s', '--source', choices=sources, default=sources, nargs='+')
     args = parser.parse_args()
 
     # iterable plot arguments excluding recursive diff
     iterargs = [
         (source, precip, ddf) for source in args.source
-        for precip in args.precip for ddf in args.ddf
-        if (source == 'cdiff') + (precip == 'dp') + (ddf == 'd') < 2]
+        for precip in args.precip for ddf in args.factor]
 
     # plot all frames in parallel
     with multiprocessing.Pool() as pool:
