@@ -122,7 +122,7 @@ def plot(source='cw5e5', precip='cp', ddf=3):
 
 def save(source, precip, ddf):
     """Plot and save figure."""
-    filename = f'{__file__[:-3]}_{source}_{precip}_ddf{ddf}'
+    filename = f'{__file__[:-3]}_{source}'
     print(f"[{time.strftime('%H:%M:%S')}] plotting {os.path.basename(filename)} ...")
     fig = plot(source, precip, ddf)
     fig.savefig(filename, dpi='figure')
