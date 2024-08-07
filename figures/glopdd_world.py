@@ -69,12 +69,12 @@ def plot(source='cw5e5', precip='cp', ddf=3):
     cax = fig.add_axes([14.5/36, 4.5/18, 6/36, .5/18])
 
     # prepare plot properties
-    if source == 'cdiff':
-        label = r'CHELSA-2.1$-$CHELSA-W5E5' + '\ninception threshold (K)'
-        props = {'cmap': cmaps('Oranges_r', 'Blues')}
-    elif precip == 'dp':
+    if source == 'pdiff':
         label = r'scaled$-$constant precip' + '\ninception threshold (K)'
         props = {'cmap': 'Oranges_r', 'vmax': 0}
+    elif source == 'sdiff':
+        label = r'CHELSA-2.1$-$CHELSA-W5E5' + '\ninception threshold (K)'
+        props = {'cmap': cmaps('Oranges_r', 'Blues')}
     else:
         label = 'glacial inception\nthreshold (K)'
         props = {'cmap': cmaps('Oranges', 'Blues'), 'vmin': -20, 'vmax': 0}
