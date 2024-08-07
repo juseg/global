@@ -16,12 +16,12 @@ from glopdd_threshold import cmaps
 
 def open_git(source='cw5e5', precip='cp', ddf=3):
     """Open glacial inception threshold."""
-    if source == 'cdiff':
-        return open_git('cera5', precip, ddf) - open_git('cw5e5', precip, ddf)
-    if precip == 'dp':
-        return open_git(source, 'pp', ddf) - open_git(source, 'cp', ddf)
-    if ddf == 'd':
+    if source == 'fdiff':
         return open_git(source, precip, 5) - open_git(source, precip, 2)
+    elif source == 'pdiff':
+        return open_git(source, 'pp', ddf) - open_git(source, 'cp', ddf)
+    elif source == 'sdiff':
+        return open_git('cera5', precip, ddf) - open_git('cw5e5', precip, ddf)
     da = xr.open_dataarray(
         f'../data/processed/glopdd.git.{source}.{precip}.ddf{ddf}.nc',
         chunks={})
