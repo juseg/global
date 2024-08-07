@@ -17,9 +17,9 @@ from glopdd_threshold import cmaps
 def open_git(source='cw5e5', precip='cp', ddf=3):
     """Open glacial inception threshold."""
     if source == 'fdiff':
-        return open_git(source, precip, 5) - open_git(source, precip, 2)
+        return open_git('cw5e5', precip, 5) - open_git('cw5e5', precip, 2)
     elif source == 'pdiff':
-        return open_git(source, 'pp', ddf) - open_git(source, 'cp', ddf)
+        return open_git('cw5e5', 'pp', ddf) - open_git('cw5e5', 'cp', ddf)
     elif source == 'sdiff':
         return open_git('cera5', precip, ddf) - open_git('cw5e5', precip, ddf)
     da = xr.open_dataarray(
@@ -33,7 +33,7 @@ def main():
     """Main program called during execution."""
 
     # available data sources
-    sources = ['cera5', 'cw5e5', 'fdiff', 'pdiff', 'sdiff']
+    sources = ['cera5', 'cw5e5', 'pdiff', 'sdiff']  # fdiff
 
     # parse command-line arguments
     parser = argparse.ArgumentParser(description=__doc__)
