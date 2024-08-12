@@ -9,6 +9,7 @@ import argparse
 import itertools
 import multiprocessing
 import os.path
+import sys
 import time
 import matplotlib.pyplot as plt
 
@@ -41,10 +42,9 @@ class MultiPlotter():
 
     def savefig(self, *args):
         """Plot and save one figure."""
-        filename = '_'.join([__file__[:-3]] + list(args))  # FIXME __file__
+        filename = '_'.join([sys.argv[0][:-3]] + list(args))
         basename = os.path.basename(filename)
         print(time.strftime(f'[%H:%M:%S] plotting {basename} ...'))
         fig = self.plotter(*args)
         fig.savefig(filename, dpi='figure')
         plt.close(fig)
-
