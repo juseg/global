@@ -5,23 +5,15 @@
 # Figures Makefile
 # ================
 
-# Variables
-# ---------
+# Targets
+# -------
 
-# default figure extension
-EXT = pdf
-
-# python executable
-PY = python
-
-# all python figures (except: asijap_domains asimis_domains)
-# FIXME variable output to glopdd_world
-PY_FIGS = \
-    $(addprefix glopdd_, altitude threshold)
-PY_FIGS := $(addsuffix .$(EXT), $(PY_FIGS))
+# global pdd figures
+GLOPDD_SOURCES = cera5 cw5e5 fdiff pdiff sdiff
+GLOPDD_WORLD_FIGS = $(foreach src, $(GLOPDD_SOURCES), glopdd_world_$(src).pdf)
 
 # all figures
-ALL_FIGS = $(PY_FIGS)
+ALL_FIGS = $(GLOPDD_WORLD_FIGS)
 
 
 # Rules
@@ -30,9 +22,9 @@ ALL_FIGS = $(PY_FIGS)
 # default rule
 all: $(ALL_FIGS)
 
-# rules and dependencies for python figures
-$(PY_FIGS): %.pdf : %.py matplotlibrc
-	$(PY) $<
+# global pdd rules
+$(foreach src, $(GLOPDD_SOURCES), %_$(src).pdf) : %.py glopdd_utils.py matplotlibrc
+	python $<
 
 # clean up
 .PHONY: clean
