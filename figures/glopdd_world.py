@@ -5,25 +5,9 @@
 
 """Plot global PDD glacial inception world map."""
 
-import xarray as xr
 import matplotlib.pyplot as plt
 from glopdd_threshold import cmaps
 import glopdd_utils
-
-
-def open_git(source='cw5e5', precip='cp', ddf=3):
-    """Open glacial inception threshold."""
-    if source == 'fdiff':
-        return open_git('cw5e5', precip, 5) - open_git('cw5e5', precip, 2)
-    if source == 'pdiff':
-        return open_git('cw5e5', 'pp', ddf) - open_git('cw5e5', 'cp', ddf)
-    if source == 'sdiff':
-        return open_git('cera5', precip, ddf) - open_git('cw5e5', precip, ddf)
-    da = xr.open_dataarray(
-        f'../data/processed/glopdd.git.{source}.{precip}.ddf{ddf}.nc',
-        chunks={})
-    da = da.sortby(da.lat, ascending=True)
-    return da
 
 
 def plot(source='cw5e5'):
@@ -51,7 +35,7 @@ def plot(source='cw5e5'):
         props = {'cmap': cmaps('Oranges', 'Blues'), 'vmin': -20, 'vmax': 0}
 
     # open global inception threshold
-    with open_git(source=source) as da:
+    with glopdd_utils.open_inception_threshold(source=source) as da:
 
         # plot global map
         da.isel(lat=slice(0, -1, 10), lon=slice(0, -1, 10)).plot.imshow(

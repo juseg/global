@@ -11,7 +11,9 @@ import multiprocessing
 import os.path
 import sys
 import time
+
 import matplotlib.pyplot as plt
+import xarray as xr
 
 
 class MultiPlotter():
@@ -48,3 +50,24 @@ class MultiPlotter():
         fig = self.plotter(*args)
         fig.savefig(filename, dpi='figure')
         plt.close(fig)
+
+
+def open_inception_threshold(source='cw5e5', precip='cp', ddf=3):
+    """Open glacial inception threshold."""
+    if source == 'fdiff':
+        return (
+            open_inception_threshold(source='cw5e5', precip=precip, ddf=5) -
+            open_inception_threshold(source='cw5e5', precip=precip, ddf=2))
+    if source == 'pdiff':
+        return (
+            open_inception_threshold(source='cw5e5', precip='pp', ddf=ddf) -
+            open_inception_threshold(source='cw5e5', precip='cp', ddf=ddf))
+    if source == 'sdiff':
+        return (
+            open_inception_threshold(source='cera5', precip=precip, ddf=ddf) -
+            open_inception_threshold(source='cw5e5', precip=precip, ddf=ddf))
+    da = xr.open_dataarray(
+        f'../data/processed/glopdd.git.{source}.{precip}.ddf{ddf}.nc',
+        chunks={})
+    da = da.sortby(da.lat, ascending=True)
+    return da
