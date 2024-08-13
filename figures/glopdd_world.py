@@ -23,7 +23,12 @@ def plot(source='cw5e5'):
     cax = fig.add_axes([14.5/36, 4.5/18, 6/36, .5/18])
 
     # prepare plot properties
-    if source == 'pdiff':
+    if source == 'fdiff':
+        label = (
+            r'$5-2\,kg\,m^{-2}\,K^{-1}\,day^{-1}$'
+            '\ninception threshold (K)')
+        props = {'cmap': 'Oranges_r'}
+    elif source == 'pdiff':
         label = r'scaled$-$constant precip' + '\ninception threshold (K)'
         props = {'cmap': 'Oranges_r', 'vmax': 0}
     elif source == 'sdiff':
