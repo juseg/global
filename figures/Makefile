@@ -10,7 +10,7 @@
 
 # global pdd figures
 GLOPDD_SOURCES = cera5 cw5e5 fdiff pdiff sdiff
-GLOPDD_WORLD_FIGS = $(foreach src, $(GLOPDD_SOURCES), glopdd_world_$(src).pdf)
+GLOPDD_WORLD_FIGS = $(foreach src, $(GLOPDD_SOURCES), glopdd_world_$(src).png)
 
 # all figures
 ALL_FIGS = $(GLOPDD_WORLD_FIGS)
@@ -23,7 +23,7 @@ ALL_FIGS = $(GLOPDD_WORLD_FIGS)
 all: $(ALL_FIGS)
 
 # global pdd rules
-$(foreach src, $(GLOPDD_SOURCES), %_$(src).pdf) : %.py glopdd_utils.py matplotlibrc
+$(foreach src, $(GLOPDD_SOURCES), %_$(src).png) : %.py glopdd_utils.py matplotlibrc
 	python $<
 
 # clean up

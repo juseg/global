@@ -46,4 +46,4 @@ figure.max_open_warning : 1       # max open figs before warning (default 20)
 
 ### SAVING
 savefig.dpi             : figure  # saved figure dots per inch (default figure)
-savefig.format          : pdf     # png, ps, pdf, svg (default png)
+savefig.format          : png     # png, ps, pdf, svg (default png)
