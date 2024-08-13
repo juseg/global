@@ -12,7 +12,8 @@ import os.path
 import sys
 import time
 
-import matplotlib.pyplot as plt
+import matplotlib as mpl
+import numpy as np
 import xarray as xr
 
 
@@ -49,7 +50,15 @@ class MultiPlotter():
         print(time.strftime(f'[%H:%M:%S] plotting {basename} ...'))
         fig = self.plotter(*args)
         fig.savefig(filename, dpi='figure')
-        plt.close(fig)
+        mpl.pyplot.close(fig)
+
+
+def combine_colormaps(*args, n=256):
+    """Combine any number of colormaps in a single one."""
+    name = ''.join(arg[:2] for arg in args)
+    values = np.linspace(0, 1, int(n/len(args)))
+    colors = np.vstack([mpl.colormaps[name](values) for name in args])
+    return mpl.colors.LinearSegmentedColormap.from_list(name, colors)
 
 
 def open_inception_threshold(source='cw5e5', precip='cp', ddf=3):

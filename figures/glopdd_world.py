@@ -6,7 +6,6 @@
 """Plot global PDD glacial inception world map."""
 
 import matplotlib.pyplot as plt
-from glopdd_threshold import cmaps
 import glopdd_utils
 
 
@@ -29,10 +28,12 @@ def plot(source='cw5e5'):
         props = {'cmap': 'Oranges_r', 'vmax': 0}
     elif source == 'sdiff':
         label = r'CHELSA-2.1$-$CHELSA-W5E5' + '\ninception threshold (K)'
-        props = {'cmap': cmaps('Oranges_r', 'Blues')}
+        props = {'cmap': glopdd_utils.combine_colormaps('Oranges_r', 'Blues')}
     else:
         label = 'glacial inception\nthreshold (K)'
-        props = {'cmap': cmaps('Oranges', 'Blues'), 'vmin': -20, 'vmax': 0}
+        props = {
+            'cmap': glopdd_utils.combine_colormaps('Oranges', 'Blues'),
+            'vmin': -20, 'vmax': 0}
 
     # open global inception threshold
     with glopdd_utils.open_inception_threshold(source=source) as da:
@@ -76,7 +77,7 @@ def plot(source='cw5e5'):
 
 def main():
     """Main program called during execution."""
-    sources = ['cera5', 'cw5e5', 'pdiff', 'sdiff']  # fdiff
+    sources = ['cera5', 'cw5e5', 'fdiff', 'pdiff', 'sdiff']
     plotter = glopdd_utils.MultiPlotter(plot, sources=sources)
     plotter()
 
