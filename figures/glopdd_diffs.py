@@ -19,13 +19,14 @@ def plot(source='sdiff'):
     cax2 = fig.add_axes([.67, .15, .23, .05])
 
     # open global inception threshold
-    # FIXME allow fdiff, pdiff sources
-    with (
-            glopdd_utils.open_inception_threshold('cera5') as cera5,
-            glopdd_utils.open_inception_threshold('cw5e5') as cw5e5):
+    with glopdd_utils.open_inception_threshold_duo(source) as (da0, da1):
+
+        # select region
+        da0 = da0.sel(lat=slice(-55, -45), lon=slice(-75, -70))
+        da1 = da1.sel(lat=slice(-55, -45), lon=slice(-75, -70))
 
         # plot absolute values
-        for ax, git in zip(axes, (cera5, cw5e5)):
+        for ax, git in zip(axes, (da0, da1)):
             git.plot.imshow(
                 ax=ax, add_labels=False, vmin=-20, vmax=4,
                 cmap='plasma_r', cbar_ax=cax1, cbar_kwargs={
@@ -33,7 +34,7 @@ def plot(source='sdiff'):
                     'orientation': 'horizontal'})
 
         # plot difference
-        diff = cw5e5 - cera5
+        diff = da1 - da0
         diff.plot.imshow(
             ax=axes[2], add_labels=False, center=0,
             cmap='RdBu', cbar_ax=cax2, cbar_kwargs={
