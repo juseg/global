@@ -10,7 +10,7 @@ import glopdd_utils
 
 
 def plot(source='cw5e5'):
-    """Make plot and save figure for given arguments."""
+    """Make plot and save figure for given source."""
 
     # initialize figure
     fig = plt.figure(figsize=(160/25.4, 80/25.4))

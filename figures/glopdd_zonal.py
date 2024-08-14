@@ -8,9 +8,11 @@
 import xarray as xr
 import matplotlib.pyplot as plt
 
+import glopdd_utils
 
-def main():
-    """Main program called during execution."""
+
+def plot(source='cw5e5'):
+    """Make plot and save figure for given source."""
 
     # initialize figure
     fig = plt.figure(figsize=(160/25.4, 80/25.4))
@@ -18,7 +20,7 @@ def main():
 
     # open inception threshold and elevation model
     with (
-            xr.open_dataarray('../data/processed/glopdd.git.cw5e5.nc') as git,
+            glopdd_utils.open_inception_threshold(source=source) as git,
             xr.open_dataset('~/.cache/hyoga/chelsa/dem_latlong.nc') as dem):
         dem = dem.dem_latlong
 
@@ -35,7 +37,8 @@ def main():
                 [0, -5, -10], ['tab:blue', 'tab:orange', 'tab:gray']):
 
             # compute zonal altitude statistics
-            ela = dem.where(git == delta)
+            # FIXME use interval due to higher precision
+            ela = dem.where(git == delta).chunk(lon=-1)
             min, med, max = ela.quantile([1/4, 2/4, 3/4], dim='lon')
 
             # plot interquartile range and median
@@ -48,8 +51,15 @@ def main():
         ax.set_ylabel('altitude (m)')
         ax.set_xlabel('latitude (°)')
 
-    # save figure
-    fig.savefig(__file__[:-3], dpi=254)
+    # return figure
+    return fig
+
+
+def main():
+    """Main program called during execution."""
+    sources = ['cera5', 'cw5e5', 'fdiff', 'pdiff', 'sdiff']
+    plotter = glopdd_utils.MultiPlotter(plot, sources=sources)
+    plotter()
 
 
 if __name__ == '__main__':
