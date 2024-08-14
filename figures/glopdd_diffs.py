@@ -26,26 +26,33 @@ def plot(source='sdiff'):
         da1 = da1.sel(lat=slice(-55, -45), lon=slice(-75, -70))
 
         # plot absolute values
+        cmap = glopdd_utils.combine_colormaps('Oranges', 'Blues')
         for ax, git in zip(axes, (da0, da1)):
             git.plot.imshow(
-                ax=ax, add_labels=False, vmin=-20, vmax=4,
-                cmap='plasma_r', cbar_ax=cax1, cbar_kwargs={
-                    'label': 'glacial inception threshold (k)',
+                ax=ax, add_labels=False, vmin=-20, vmax=0,
+                cmap=cmap, cbar_ax=cax1, cbar_kwargs={
+                    'label': 'glacial inception threshold (K)',
                     'orientation': 'horizontal'})
 
         # plot difference
+        cmap = glopdd_utils.combine_colormaps('Oranges_r', 'Blues')
         diff = da1 - da0
         diff.plot.imshow(
             ax=axes[2], add_labels=False, center=0,
-            cmap='RdBu', cbar_ax=cax2, cbar_kwargs={
-                'label': 'glacial inception threshold (k)',
+            cmap=cmap, cbar_ax=cax2, cbar_kwargs={
+                'label': 'difference (K)',
                 'orientation': 'horizontal'})
 
+    # titles for each panel
+    ref, sub, suffix = {
+        'fdiff': ('2', '5', r'$\,kg\,m^{-2}\,K^{-1}\,day^{-1}$'),
+        'pdiff': ('constant', 'reduced', ' precipitation'),
+        'sdiff': ('CHELSA-ERA5', 'CHELSA-W5E5', '')}[source]
+    titles = (f'{ref}{suffix}', f'{sub}{suffix}', fr'{sub} - {ref}{suffix}')
+
     # set axes properties
-    axes[0].set_title('CHELSA-ERA5')
-    axes[1].set_title('CHELSA-W5E5')
-    axes[2].set_title(r'CHELSA-W5E5 - CHELSA-ERA5')
-    for ax in axes:
+    for ax, title in zip(axes, titles):
+        ax.set_title(title)
         ax.set_aspect('equal')
         ax.xaxis.set_visible(False)
         ax.yaxis.set_visible(False)
