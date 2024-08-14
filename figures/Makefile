@@ -10,10 +10,13 @@
 
 # global pdd figures
 GLOPDD_SOURCES = cera5 cw5e5 fdiff pdiff sdiff
-GLOPDD_WORLD_FIGS = $(foreach src, $(GLOPDD_SOURCES), glopdd_world_$(src).png)
+GLOPDD_FIGS = \
+	$(addsuffix .png, \
+		$(addprefix glopdd_world_, cera5 cw5e5 fdiff pdiff sdiff) \
+		$(addprefix glopdd_zonal_, cera5 cw5e5 ))
 
 # all figures
-ALL_FIGS = $(GLOPDD_WORLD_FIGS)
+ALL_FIGS = $(GLOPDD_FIGS)
 
 
 # Rules
