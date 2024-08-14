@@ -56,7 +56,7 @@ def plot(source='cw5e5'):
 
 def main():
     """Main program called during execution."""
-    sources = ['cera5', 'cw5e5', 'fdiff', 'pdiff', 'sdiff']
+    sources = ['cera5', 'cw5e5']
     plotter = glopdd_utils.MultiPlotter(plot, sources=sources)
     plotter()
 
