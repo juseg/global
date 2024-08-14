@@ -33,12 +33,11 @@ def plot(source='cw5e5'):
         dem = dem.reindex_like(git, method='nearest', tolerance=1e-5)
 
         # for selected temperature change
-        for delta, color in zip(
+        for change, color in zip(
                 [0, -5, -10], ['tab:blue', 'tab:orange', 'tab:gray']):
 
             # compute zonal altitude statistics
-            # FIXME use interval due to higher precision
-            ela = dem.where(git == delta).chunk(lon=-1)
+            ela = dem.where((change-1 < git) & (git < change+1)).chunk(lon=-1)
             min, med, max = ela.quantile([1/4, 2/4, 3/4], dim='lon')
 
             # plot interquartile range and median
