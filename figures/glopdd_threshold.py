@@ -10,14 +10,6 @@ import xarray as xr
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-def cmaps(*args, n=256):
-    """Merge any number of color maps into one."""
-    name = ''.join(arg[:2] for arg in args)
-    values = np.linspace(0, 1, int(n/len(args)))
-    colors = np.vstack([mpl.colormaps[name](values) for name in args])
-    return mpl.colors.LinearSegmentedColormap.from_list(name, colors)
-
-
 def main():
     """Main program called during execution."""
 
