@@ -8,9 +8,11 @@
 import xarray as xr
 import matplotlib.pyplot as plt
 
+import glopdd_utils
 
-def main():
-    """Main program called during execution."""
+
+def plot(source='cw5e5'):
+    """Make plot and save figure for given source."""
 
     # initialize figure
     fig = plt.figure(figsize=(160/25.4, 80/25.4))
@@ -18,7 +20,7 @@ def main():
 
     # open inception threshold and elevation model
     with (
-            xr.open_dataarray('../data/processed/glopdd.git.cw5e5.nc') as git,
+            glopdd_utils.open_inception_threshold(source=source) as git,
             xr.open_dataset('~/.cache/hyoga/chelsa/dem_latlong.nc') as dem):
         dem = dem.dem_latlong
 
@@ -31,16 +33,16 @@ def main():
         dem = dem.reindex_like(git, method='nearest', tolerance=1e-5)
 
         # for selected temperature change
-        for delta, color in zip(
+        for change, color in zip(
                 [0, -5, -10], ['tab:blue', 'tab:orange', 'tab:gray']):
 
             # compute zonal altitude statistics
-            ela = dem.where(git == delta)
-            min, med, max = ela.quantile([1/4, 2/4, 3/4], dim='lon')
+            ela = dem.where((change-1 < git) & (git < change+1)).chunk(lon=-1)
+            low, med, top = ela.quantile([1/4, 2/4, 3/4], dim='lon')
 
             # plot interquartile range and median
-            ax.fill_between(med.lat, min, max, color=color, alpha=0.25)
-            ax.plot(med.lat, med, color=color, label=fr'{delta}$\,$K')
+            ax.fill_between(med.lat, low, top, color=color, alpha=0.25)
+            ax.plot(med.lat, med, color=color, label=fr'${change}\pm 1\,$K')
 
         # set axes properties
         ax.legend()
@@ -48,8 +50,15 @@ def main():
         ax.set_ylabel('altitude (m)')
         ax.set_xlabel('latitude (°)')
 
-    # save figure
-    fig.savefig(__file__[:-3], dpi=254)
+    # return figure
+    return fig
+
+
+def main():
+    """Main program called during execution."""
+    sources = ['cera5', 'cw5e5']
+    plotter = glopdd_utils.MultiPlotter(plot, sources=sources)
+    plotter()
 
 
 if __name__ == '__main__':
