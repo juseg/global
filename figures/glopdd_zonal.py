@@ -38,11 +38,11 @@ def plot(source='cw5e5'):
 
             # compute zonal altitude statistics
             ela = dem.where((change-1 < git) & (git < change+1)).chunk(lon=-1)
-            min, med, max = ela.quantile([1/4, 2/4, 3/4], dim='lon')
+            low, med, top = ela.quantile([1/4, 2/4, 3/4], dim='lon')
 
             # plot interquartile range and median
-            ax.fill_between(med.lat, min, max, color=color, alpha=0.25)
-            ax.plot(med.lat, med, color=color, label=fr'{delta}$\,$K')
+            ax.fill_between(med.lat, low, top, color=color, alpha=0.25)
+            ax.plot(med.lat, med, color=color, label=fr'${change}\pm 1\,$K')
 
         # set axes properties
         ax.legend()
