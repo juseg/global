@@ -13,17 +13,19 @@ def plot(source='sdiff'):
     """Make plot and save figure for given source."""
 
     # initialize figure
-    fig, axes = plt.subplots(ncols=3, gridspec_kw={
-        'left': .1, 'bottom': .2, 'top': .95})
-    cax1 = fig.add_axes([.1, .15, .52, .05])
-    cax2 = fig.add_axes([.67, .15, .23, .05])
+    fig, axes = plt.subplots(
+        figsize=(160/25.4, 80/25.4), ncols=3, gridspec_kw={
+            'left': 0.5/36, 'right': 35.5/36, 'bottom': 4/18, 'top': 17/18,
+            'wspace': 1/11})
+    cax1 = fig.add_axes([9/36, 2.5/18, 6/36, 0.5/18])
+    cax2 = fig.add_axes([27/36, 2.5/18, 6/36, 0.5/18])
 
     # open global inception threshold
     with glopdd_utils.open_inception_threshold_duo(source) as (da0, da1):
 
-        # select region
-        da0 = da0.sel(lat=slice(-55, -45), lon=slice(-75, -70))
-        da1 = da1.sel(lat=slice(-55, -45), lon=slice(-75, -70))
+        # select region (aspect 14x12 = 7x6)
+        da0 = da0.sel(lat=slice(-52, -45), lon=slice(-76, -70))
+        da1 = da1.sel(lat=slice(-52, -45), lon=slice(-76, -70))
 
         # plot absolute values
         cmap = glopdd_utils.combine_colormaps('Oranges', 'Blues')
