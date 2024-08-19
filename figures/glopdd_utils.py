@@ -68,7 +68,7 @@ def open_inception_threshold_duo(source='sdiff'):
     kwargs0, kwargs1 = {
         'fdiff': ({'ddf': val} for val in (2, 5)),
         'pdiff': ({'precip': val} for val in ('cp', 'pp')),
-        'sdiff': ({'source': val} for val in ('cera5', 'cw5e5'))}[source]
+        'sdiff': ({'source': val} for val in ('cw5e5', 'cera5'))}[source]
     with (
             open_inception_threshold(**kwargs0) as da0,
             open_inception_threshold(**kwargs1) as da1):

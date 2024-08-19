@@ -53,7 +53,7 @@ def plot(source='sdiff'):
     ref, sub, suffix = {
         'fdiff': ('2', '5', r'$\,kg\,m^{-2}\,K^{-1}\,day^{-1}$'),
         'pdiff': ('constant', 'reduced', ' precipitation'),
-        'sdiff': ('CHELSA-ERA5', 'CHELSA-W5E5', '')}[source]
+        'sdiff': ('CHELSA-W5E5', 'CHELSA-ERA5', '')}[source]
     titles = (f'{ref}{suffix}', f'{sub}{suffix}', fr'{sub} - {ref}{suffix}')
 
     # set axes properties
