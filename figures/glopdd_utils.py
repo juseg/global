@@ -6,6 +6,7 @@
 """Global PDD plotting utils."""
 
 import argparse
+import contextlib
 import itertools
 import multiprocessing
 import os.path
@@ -59,6 +60,19 @@ def combine_colormaps(*args, n=256):
     values = np.linspace(0, 1, int(n/len(args)))
     colors = np.vstack([mpl.colormaps[name](values) for name in args])
     return mpl.colors.LinearSegmentedColormap.from_list(name, colors)
+
+
+@contextlib.contextmanager
+def open_inception_threshold_duo(source='sdiff'):
+    """Open duo of inception threshold maps."""
+    kwargs0, kwargs1 = {
+        'fdiff': ({'ddf': val} for val in (2, 5)),
+        'pdiff': ({'precip': val} for val in ('cp', 'pp')),
+        'sdiff': ({'source': val} for val in ('cw5e5', 'cera5'))}[source]
+    with (
+            open_inception_threshold(**kwargs0) as da0,
+            open_inception_threshold(**kwargs1) as da1):
+        yield (da0, da1)
 
 
 def open_inception_threshold(source='cw5e5', precip='cp', ddf=3):

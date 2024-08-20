@@ -12,6 +12,7 @@
 GLOPDD_SOURCES = cera5 cw5e5 fdiff pdiff sdiff
 GLOPDD_FIGS = \
 	$(addsuffix .png, \
+		$(addprefix glopdd_diffs_, fdiff pdiff sdiff) \
 		$(addprefix glopdd_world_, cera5 cw5e5 fdiff pdiff sdiff) \
 		$(addprefix glopdd_zonal_, cera5 cw5e5 ))
 
@@ -25,9 +26,14 @@ ALL_FIGS = $(GLOPDD_FIGS)
 # default rule
 all: $(ALL_FIGS)
 
-# global pdd rules
-$(foreach src, $(GLOPDD_SOURCES), %_$(src).png) : %.py glopdd_utils.py matplotlibrc
-	python $<
+# custom source pattern rules
+# IDEA: allow positional argument for full flexibility
+define GEN_SOURCE_RULE
+%_$(source).png: %.py glopdd_utils.py matplotlibrc
+	python $$< --source $(source)
+endef
+$(foreach source,$(GLOPDD_SOURCES), \
+  $(eval $(call GEN_SOURCE_RULE)))
 
 # clean up
 .PHONY: clean
