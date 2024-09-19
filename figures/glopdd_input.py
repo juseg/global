@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright (c) 2023-2024, Julien Seguinot (juseg.dev)
+# Copyright (c) 2024, Julien Seguinot (juseg.dev)
 # Creative Commons Attribution-ShareAlike 4.0 International License
 # (CC BY-SA 4.0, http://creativecommons.org/licenses/by-sa/4.0/)
 
