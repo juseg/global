@@ -3,7 +3,7 @@
 # Creative Commons Attribution-ShareAlike 4.0 International License
 # (CC BY-SA 4.0, http://creativecommons.org/licenses/by-sa/4.0/)
 
-"""Plot global PDD side-by-side comparisons."""
+"""Plot global PDD inception threshold side-by-side comparisons."""
 
 import matplotlib.pyplot as plt
 import glopdd_utils

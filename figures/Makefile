@@ -12,6 +12,7 @@
 GLOPDD_SOURCES = cera5 cw5e5 fdiff pdiff sdiff
 GLOPDD_FIGS = \
 	$(addsuffix .png, \
+		glopdd_input \
 		$(addprefix glopdd_diffs_, fdiff pdiff sdiff) \
 		$(addprefix glopdd_world_, cera5 cw5e5 fdiff pdiff sdiff) \
 		$(addprefix glopdd_zonal_, cera5 cw5e5 ))
