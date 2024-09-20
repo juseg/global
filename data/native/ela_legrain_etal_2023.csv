@@ -1,0 +1,37 @@
+# Copyright (c) 2023 Etienne Legrain
+# From Etienne Legrain, Pierre-Henri Blard, Masa Kageyama, Julien Charreau,
+# Guillaume Leduc, Stella Bourdin, David V. Bekaert. Moisture amplification of
+# the high-altitude deglacial warming. Quat. Sci. Rev. 318, 108303, 2023.
+# https://doi.org/10.1016/j.quascirev.2023.108303.
+Site name,Latitude,Longitude,Country,LGM ELA (m),σ(m)
+Lake Tahoe,38.94,-120.1,USA,2609,31
+Lundy Canyon,38.03,-119.2,USA,3045,66
+Bloody Canyon,37.89,-119.14,USA,3091,94
+Bishop Creek,37.29,-118.55,USA,3250,47
+Dollar Lake,34.1,-116.8,USA,2934,20
+San Gorgonio,34.1,-116.8,USA,3055,32
+Nevado de Colima,19.56,-103.6,Mexico,3272,125
+Corfre de Perote,19.48,-97.15,Mexico,3650,40
+Tancitaro,19.4,-102.3,Mexico,3495,34
+Iztaccihualt,19.17,-98.64,Mexico,3771,86
+Mean Costa Rica,9.5,-83.49,Costa Rica,3513,13
+Cerro Chirippo,9.46,-83.5,Costa Rica,3485,20
+Paramo de Piedras Blancas,8.8,-70.9,Venezuela,3930,72
+Laguna Mucubaji,8.79,-70.83,Venezuela,3557,12
+Northern Sierra Santo Domingo,8.76,-70.85,Venezuela,3640,54
+Southern Sierra Santo Domingo,8.7,-70.78,Venezuela,3320,113
+Sierra Nevada de Cocuy,6.5,-72.3,Colombia,3867,241
+Ruiz Tolima,4.9,-75.4,Colombia,3480,50
+Bogota Area,4.5,-72.3,Colombia,3227,138
+Guagua Pinchicha,-0.18,-78.57,Ecuador,4085,125
+Cajamarca,-6.98,-78.31,Peru,3834,9
+Cojup,-9.48,-77.45,Peru,4560,89
+Huancho Valley,-10.33,-77,Peru,4557,58
+Minas Tira,-14.16,-70.26,Peru,4679,17
+Valley San Francisco,-15.9,-68.5,Bolivia,4807,40
+Chajnantor plateau,-22.95,-67.71,Chile,4878,11
+Nevado de Chani,-24.06,-65.75,Argentina,4641,20
+Rio Cerillos,-27.2,-66.1,Argentina,4622,31
+Encierro Valley,-29.1,-69.54,Chile,4146,30
+Loma de los morteritos,-33,-69.45,Argentina,3440,78
+Las lenas,-35.15,-70.08,Argentina,3018,54

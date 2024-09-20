@@ -110,7 +110,7 @@ def plot(source='cw5e5'):
         inset.set_xlabel('latitude (°)')
 
     # plot paleoglacier equilibrium line altitudes
-    ela = pd.read_csv('../data/native/ela_legrain_etal_2023.csv')
+    ela = pd.read_csv('../data/native/ela_legrain_etal_2023.csv', comment='#')
     ax.plot(ela.Longitude, ela.Latitude, color='tab:red', ls='', marker='+')
     inset.errorbar(
         ela.Latitude, ela['LGM ELA (m)']/1e3, yerr=ela['σ(m)']/1e3,
