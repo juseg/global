@@ -5,33 +5,41 @@
 
 """Plot global PDD glacial inception on PMIP4 ensemble mean."""
 
+import os.path
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
 import glopdd_utils
+import hyoga
 
 
-def open_pmip_change():
+class ExternalDownloader(hyoga.open.downloader.Downloader):
+    """A downloader that stores files in local external data directory.
+
+    Call parameters
+    ---------------
+    url : str
+        The url of the file to download
+    path : str
+        The path of the downloaded file relative to the external directory.
+    """
+    def path(self, *args):
+        path = super().path(*args)
+        return os.path.join('..', 'external', path)
+
+
+def open_pmip_anomaly():
     """Open PMIP temperature change from PI to LGM."""
-    # FIXME add script to download data file
-    # https://data.ipsl.fr/data4papers/kageyama-2021/PMIP4_LGM_paper/
-    # Figures1_6_8_Temperature_Precipitation_Evaporation/PMIP4-ens-means.nc4
-    with xr.open_dataset('../data/external/PMIP4-ens-means.nc4') as pmip:
-        pmip['lon'] = pmip['lon'] % 360 - 180
-        return pmip.lgm_tas - pmip.pi_tas
-
-
-def open_lgm_anomaly(**kwargs):
-    """Open glacial inception threshold relative to PMIP4 LGM."""
-    # FIXME add script to download data file
-    # https://data.ipsl.fr/data4papers/kageyama-2021/PMIP4_LGM_paper/
-    # Figures1_6_8_Temperature_Precipitation_Evaporation/PMIP4-ens-means.nc4
-    with xr.open_dataset('../data/external/PMIP4-ens-means.nc4') as pmip:
-        pmip['lon'] = pmip['lon'] % 360 - 180
-        lgm_change = (pmip.lgm_tas - pmip.pi_tas).load()
-    with glopdd_utils.open_inception_threshold(**kwargs) as git:
-        lgm_change = lgm_change.interp_like(git)
-        return git - lgm_change
+    basename = 'PMIP4-ens-means.nc4'
+    filepath = ExternalDownloader()(
+        'https://data.ipsl.fr/data4papers/kageyama-2021/PMIP4_LGM_paper/'
+        'Figures1_6_8_Temperature_Precipitation_Evaporation/' + basename,
+        os.path.join('..', 'external', basename))
+    with xr.open_dataset(filepath) as pmip:
+        da = pmip.lgm_tas - pmip.pi_tas
+        da = da.assign_coords(lon=pmip.lon % 360 - 180)
+        return da
 
 
 def plot(source='cw5e5'):
@@ -45,16 +53,11 @@ def plot(source='cw5e5'):
         plt.Rectangle((-50, -80), 220, 100, alpha=0.75, ec=str(2/3), fc='w'))
 
     # open global inception threshold and PMIP4 LGM temperature change
-    # FIXME download programatically from
-    # https://data.ipsl.fr/data4papers/kageyama-2021/PMIP4_LGM_paper/
-    # Figures1_6_8_Temperature_Precipitation_Evaporation/PMIP4-ens-means.nc4
     with (
             glopdd_utils.open_inception_threshold(source=source) as git,
-            xr.open_dataset('../data/external/PMIP4-ens-means.nc4') as pmip):
+            open_pmip_anomaly() as lgm):
 
         # interpolate PMIP LGM anomaly to CHELSA grid
-        lgm = pmip.lgm_tas - pmip.pi_tas
-        lgm = lgm.assign_coords(lon=pmip.lon % 360 - 180)
         lgm = lgm.interp_like(git)
 
         # plot global inception areas
