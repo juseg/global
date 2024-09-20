@@ -64,8 +64,7 @@ def plot(source='cw5e5'):
         gia = git > lgm
         gia.isel(lat=slice(0, -1, 10), lon=slice(0, -1, 10)).plot.imshow(
                 ax=ax, add_labels=False, add_colorbar=False,
-                cmap='Blues', vmax=1.5)
-                # levels=[0.5], colors=['tab:blues'])
+                cmap=mpl.colors.ListedColormap(['#ffffff', 'tab:blue']))
 
         # set axes properties
         ax.set_aspect('equal')
@@ -96,6 +95,7 @@ def plot(source='cw5e5'):
 
                 # compute zonal altitude statistics
                 ela = dem.where((change-1 < git) & (git < change+1))
+                ela = ela.chunk(lon=-1)
                 low, med, top = ela.quantile([0, 2/4, 1], dim='lon')
 
                 # plot interquartile range and median
