@@ -6,7 +6,6 @@
 """Plot global PDD glacial inception threshold."""
 
 import shapely
-import xarray as xr
 import matplotlib.pyplot as plt
 import hyoga
 import glopdd_utils
@@ -22,12 +21,15 @@ def plot(source='cw5e5'):
 
     # plot glacial inception threshold
     west, south, east, north = 2, 49.25, 7, 51.75
+    if source in ('cera5', 'cw5e5'):
+        cmap = 'Blues'
+    else:
+        cmap = glopdd_utils.get_plot_kwargs(source=source)['cmap']
     with glopdd_utils.open_inception_threshold(source=source) as git:
         git = git.sel(lon=slice(west, east), lat=slice(south, north))
         git.plot.imshow(
-            ax=ax, add_labels=False, cmap='Purples',
-            cbar_ax=cax, cbar_kwargs={
-                'label': 'glacial inception threshold (K)',
+            ax=ax, add_labels=False, cmap=cmap, cbar_ax=cax, cbar_kwargs={
+                'label': glopdd_utils.get_plot_title(source=source),
                 'orientation': 'horizontal'})
 
     # plot geographic vectors
