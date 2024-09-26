@@ -18,6 +18,9 @@ import numpy as np
 import xarray as xr
 
 
+# Parallel MultiPlotter class
+# ---------------------------
+
 class MultiPlotter():
     """Plot multiple figures in parallel."""
 
@@ -54,6 +57,9 @@ class MultiPlotter():
         mpl.pyplot.close(fig)
 
 
+# Plot helpers
+# ------------
+
 def combine_colormaps(*args, n=256):
     """Combine any number of colormaps in a single one."""
     name = ''.join(arg[:2] for arg in args)
@@ -61,6 +67,37 @@ def combine_colormaps(*args, n=256):
     colors = np.vstack([mpl.colormaps[name](values) for name in args])
     return mpl.colors.LinearSegmentedColormap.from_list(name, colors)
 
+
+def get_plot_labels(source='sdiff'):
+    """Get titles for three-panel diff plots."""
+    ref, sub, suffix = {
+        'fdiff': ('2', '5', r'$\,kg\,m^{-2}\,K^{-1}\,day^{-1}$'),
+        'pdiff': ('constant', 'reduced', ' precip'),
+        'sdiff': ('CHELSA-W5E5', 'CHELSA-2.1', ''),
+        }[source]
+    return f'{ref}{suffix}', f'{sub}{suffix}', fr'{sub} - {ref}{suffix}'
+
+
+def get_plot_title(source='cw5e5'):
+    if source in ('cera5', 'cw5e5'):
+        prefix = 'glacial'
+    else:
+        prefix = get_plot_labels(source=source)[2]
+    return prefix + '\ninception threshold (K)'
+
+
+def get_plot_kwargs(source='cw5e5'):
+    combine = combine_colormaps
+    return {
+        'cera5': {'cmap': combine('Oranges', 'Blues'), 'vmin': -20, 'vmax': 0},
+        'cw5e5': {'cmap': combine('Oranges', 'Blues'), 'vmin': -20, 'vmax': 0},
+        'fdiff': {'cmap': 'Oranges_r'},
+        'pdiff': {'cmap': 'Oranges_r', 'vmax': 0},
+        'sdiff': {'cmap': combine('Oranges_r', 'Blues')}}[source]
+
+
+# Open datasets
+# -------------
 
 @contextlib.contextmanager
 def open_inception_threshold_duo(source='sdiff'):

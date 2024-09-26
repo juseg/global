@@ -50,11 +50,7 @@ def plot(source='sdiff'):
                 'orientation': 'horizontal'})
 
     # titles for each panel
-    ref, sub, suffix = {
-        'fdiff': ('2', '5', r'$\,kg\,m^{-2}\,K^{-1}\,day^{-1}$'),
-        'pdiff': ('constant', 'reduced', ' precipitation'),
-        'sdiff': ('CHELSA-W5E5', 'CHELSA-ERA5', '')}[source]
-    titles = (f'{ref}{suffix}', f'{sub}{suffix}', fr'{sub} - {ref}{suffix}')
+    titles = glopdd_utils.get_plot_labels(source=source)
 
     # set axes properties
     for ax, title in zip(axes, titles):

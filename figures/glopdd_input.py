@@ -8,6 +8,7 @@
 import os.path
 import xarray as xr
 import matplotlib.pyplot as plt
+import glopdd_utils
 
 
 def open_climatology(month=7, source='cw5e5', var='tas'):
@@ -69,7 +70,7 @@ def plot():
                 'orientation': 'horizontal'})
 
     # set axes properties
-    titles = ('CHELSA-ERA5', 'CHELSA-W5E5', r'CHELSA-W5E5 $-$ CHELSA-ERA5')
+    titles = glopdd_utils.get_plot_labels(source='cdiff')
     for ax, title in zip(axes, titles):
         ax.set_title(title)
         ax.set_aspect('equal')
