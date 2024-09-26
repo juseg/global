@@ -17,9 +17,9 @@ def plot(source='cw5e5'):
         figsize=(160/25.4, 80/25.4), ncols=3, gridspec_kw={
             'left': 0.5/36, 'bottom': 0.5/18, 'right': 35.5/36,
             'top': 16.5/18, 'wspace': 1/11})
-    cax = fig.add_axes([15/36, 3/18, 6/36, 0.5/18])
+    cax = fig.add_axes([15/36, 3.5/18, 6/36, 0.5/18])
     axes[1].add_patch(plt.Rectangle(
-            (0, 0), 1, 3.5/16, alpha=0.75, ec=str(2/3), fc='w',
+            (0, 0), 1, 4/16, alpha=0.75, ec=str(2/3), fc='w',
             transform=axes[1].transAxes))
 
     # choose plot regions (wsen, aspect 16x11)
@@ -30,21 +30,8 @@ def plot(source='cw5e5'):
         }
 
     # prepare plot properties
-    # FIXME duplicates world plot
-    if source == 'fdiff':
-        label = r'$5-2\,kg\,m^{-2}\,K^{-1}\,day^{-1}$ (K)'
-        props = {'cmap': 'Oranges_r'}
-    elif source == 'pdiff':
-        label = r'scaled$-$constant precip'
-        props = {'cmap': 'Oranges_r', 'vmax': 0}
-    elif source == 'sdiff':
-        label = r'CHELSA-2.1$-$CHELSA-W5E5'
-        props = {'cmap': glopdd_utils.combine_colormaps('Oranges_r', 'Blues')}
-    else:
-        label = 'glacial inception threshold (K)'
-        props = {
-            'cmap': glopdd_utils.combine_colormaps('Oranges', 'Blues'),
-            'vmin': -20, 'vmax': 0}
+    label = glopdd_utils.get_plot_title(source=source)
+    props = glopdd_utils.get_plot_kwargs(source=source)
 
     # open global inception threshold
     with glopdd_utils.open_inception_threshold(source=source) as da:
