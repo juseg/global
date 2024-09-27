@@ -10,6 +10,14 @@ import scipy.special as sc
 import matplotlib.pyplot as plt
 
 
+def melt_teff(temp, stdv=1):
+    """Compute effective temperature for melt (melt = ddf * teff)."""
+    if stdv == 0:
+        return temp * (temp > 0)
+    norm = temp / (2**0.5*stdv)
+    return (stdv/2**0.5) * (np.exp(-norm**2)/np.pi**0.5 + norm*sc.erfc(-norm))
+
+
 def snow_frac(temp, median=1, dispersion=1, method='linear'):
     """Compute fraction of precipitation that falls as snow."""
 
@@ -21,28 +29,39 @@ def snow_frac(temp, median=1, dispersion=1, method='linear'):
     if method == 'normal':
         return 0.5*sc.erfc((temp-median)/(2**0.5*dispersion))
 
+    # invalid method
+    raise ValueError(f"invalid method {method}")
+
 
 def plot():
     """Make plot and return figure."""
 
     # initialize figure
-    fig = plt.figure(figsize=(160/25.4, 80/25.4))
-    ax = fig.add_axes([0.1, 0.15, 0.85, 0.75])
+    fig, axes = plt.subplots(
+        figsize=(160/25.4, 80/25.4), ncols=2, gridspec_kw={
+            'left': 0.1, 'bottom': 0.15, 'right': 0.95, 'top': 0.9})
 
-    # plot snow fraction
-    temp = np.linspace(-4, 6, 101)
-    for method, color in zip(['linear', 'normal'], ['tab:blue', 'tab:red']):
-        frac = snow_frac(temp, method=method)
-        half = snow_frac(temp, dispersion=0.5, method=method)
-        double = snow_frac(temp, dispersion=2, method=method)
-        ax.fill_between(temp, half, double, alpha=0.1, color=color)
-        ax.plot(temp, frac, color=color, label=method)
+    # for variable dispersion value
+    for sigma in range(6):
+
+        # plot snow fraction
+        temp = np.linspace(-4, 6, 101)
+        color = plt.get_cmap('Blues', 7)(sigma+1)
+        frac = snow_frac(temp, dispersion=sigma, method='normal')
+        axes[0].plot(temp, frac, color=color)
+
+        # plot effective temperature for melt
+        temp = np.linspace(-5, 5, 101)
+        color = plt.get_cmap('Reds', 7)(sigma+1)
+        axes[1].plot(temp, melt_teff(temp, sigma), color=color)
 
     # set axes properties
-    ax.set_title('Fraction of precipitation that falls as snow')
-    ax.set_xlabel('Surface air temperature (°C)')
-    ax.set_ylabel('Snow fraction')
-    ax.legend()
+    axes[0].set_title('Fraction of precipitation that falls as snow')
+    axes[0].set_xlabel('Surface air temperature (°C)')
+    axes[0].set_ylabel('Snow fraction')
+    axes[1].set_title('Effective temperature for melt')
+    axes[1].set_xlabel('Effective temperature (°C)')
+    axes[1].set_ylabel('Surface air temperature (°C)')
 
     # return figure
     return fig
