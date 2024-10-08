@@ -5,8 +5,40 @@
 
 """Plot global PDD glacial inception areas."""
 
+import xarray as xr
 import matplotlib.pyplot as plt
 import glopdd_utils
+
+
+def regions_like(other):
+    """Build a regions object with the same shape as given other."""
+
+    # region definitions (Greenland overlaps Europe and N.Am.)
+    bounds = {
+        'Africa': (-30, -60, 60, 30),
+        'Antarctica': (-180, -90, 180, -60),
+        'Asia': (60, 0, 180, 90),
+        'Europe': (-30, 30, 60, 90),
+        'North America': (-180, 10, -30, 90),
+        'Oceania': (60, -60, 180, 0),
+        'South America': (-180, -60, -30, 10),
+        'Greenland': (-75, 60, -15, 90)}
+
+    # build a region mask object
+    regions = xr.zeros_like(other, dtype=str)
+    for name, (west, south, east, north) in bounds.items():
+        lon_mask = (west <= regions.lon) & (regions.lon <= east)
+        lat_mask = (south <= regions.lat) & (regions.lat <= north)
+
+        # dask does not support multi-dim vect indexing, so use where
+        # regions.loc[{'lat': lat_mask, 'lon': lon_mask}] = name
+        regions = regions.where(~(lat_mask & lon_mask), name)
+
+    # assign non-dimensional region name coordinate
+    regions = regions.assign_attrs(labels=bounds.keys())
+
+    # return new object
+    return regions
 
 
 def plot(source='cw5e5'):
