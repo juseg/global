@@ -66,9 +66,8 @@ def plot(source='cw5e5'):
     """Make plot and save figure for given source."""
 
     # initialize figure
-    fig, axes = plt.subplots(
-        figsize=(160/25.4, 80/25.4), ncols=2, gridspec_kw={
-            'left': 0.1, 'bottom': 0.15, 'right': 0.95, 'top': 0.9})
+    fig, ax = plt.subplots(figsize=(85/25.4, 60/25.4), gridspec_kw={
+        'left': 12.5/85, 'bottom': 12.5/60, 'right': 82.5/85, 'top': 57.5/60})
 
     # open inception threshold and elevation model
     with glopdd_utils.open_inception_threshold(source=source) as git:
@@ -80,7 +79,6 @@ def plot(source='cw5e5'):
         cells = cell_areas_ellipsoidal(git.lat, git.lat[1] - git.lat[0])
 
         # loop on glaciated regions
-        ax = axes[0]
         regions = regions_like(git)
         for label in regions.labels:
 
@@ -91,7 +89,7 @@ def plot(source='cw5e5'):
             # plot cumulative area
             gia = cells.broadcast_like(sel).groupby(sel).sum()
             gia = gia.reindex(git=gia.git[::-1]).cumsum(dim='git') / 1e12
-            gia.plot(ax=axes[0], label=label)
+            gia.plot(ax=ax, label=label)
 
         # set axes properties
         ax.legend()
