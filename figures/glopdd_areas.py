@@ -8,6 +8,7 @@
 import time
 import numpy as np
 import xarray as xr
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import glopdd_utils
 
@@ -25,6 +26,12 @@ def cell_areas_spherical(lat, dlat, dlon=None, radius=6371230):
     """Compute elemental surface area on spherical Earth."""
     dlon = dlon or dlat
     return radius**2 * np.cos(np.pi*lat/180) * dlat * dlon * (np.pi/180)**2
+
+
+def color_colormap(color, gamma=1):
+    """Create a colormap from white to given colour."""
+    return mpl.colors.LinearSegmentedColormap.from_list(
+        color, [(0, 'w'), (1, color)], gamma=gamma)
 
 
 def regions_like(other):
@@ -62,8 +69,9 @@ def plot(source='cw5e5'):
     """Make plot and save figure for given source."""
 
     # initialize figure
-    fig, ax = plt.subplots(figsize=(85/25.4, 60/25.4), gridspec_kw={
-        'left': 12.5/85, 'bottom': 12.5/60, 'right': 82.5/85, 'top': 57.5/60})
+    fig, axes = plt.subplots(
+        figsize=(160/25.4, 80/25.4), ncols=2, gridspec_kw={
+            'left': 0.1, 'bottom': 0.15, 'right': 0.95, 'top': 0.9})
 
     # open inception threshold and elevation model
     with glopdd_utils.open_inception_threshold(source=source) as git:
@@ -76,21 +84,27 @@ def plot(source='cw5e5'):
 
         # loop on glaciated regions
         regions = regions_like(git)
-        for label in regions.labels:
+        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+        for color, label in zip(colors, regions.labels):
 
             # select regional data
             print(time.strftime(f'[%H:%M:%S] - computing areas in {label}...'))
             sel = git.where(regions == label)
 
+            # plot regions map
+            sel.plot.imshow(
+                ax=axes[0], add_labels=False, add_colorbar=False,
+                cmap=color_colormap(color, gamma=1/3))
+
             # plot cumulative area
             gia = cells.broadcast_like(sel).groupby(sel).sum()
             gia = gia.reindex(git=gia.git[::-1]).cumsum(dim='git') / 1e12
-            gia.plot(ax=ax, label=label)
+            gia.plot(ax=axes[1], color=color, label=label)
 
         # set axes properties
-        ax.legend()
-        ax.set_xlabel('temperature change (K)')
-        ax.set_ylabel(r'glacial inception area ($10^6\,km^2$)')
+        axes[1].legend(ncols=2)
+        axes[1].set_xlabel('temperature change (K)')
+        axes[1].set_ylabel(r'glacial inception area ($10^6\,km^2$)')
 
     # return figure
     return fig
