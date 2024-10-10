@@ -32,13 +32,13 @@ def regions_like(other):
 
     # region definitions (Greenland overlaps Europe and N.Am.)
     bounds = {
-        'Africa': (-30, -60, 60, 30),
-        'Antarctica': (-180, -90, 180, -60),
         'Asia': (60, 0, 180, 90),
-        'Europe': (-30, 30, 60, 90),
         'North America': (-180, 10, -30, 90),
-        'Oceania': (60, -60, 180, 0),
+        'Europe': (-30, 30, 60, 90),
         'South America': (-180, -60, -30, 10),
+        'Africa': (-30, -60, 60, 30),
+        'Oceania': (60, -60, 180, 0),
+        'Antarctica': (-180, -90, 180, -60),
         'Greenland': (-75, 60, -15, 90)}
 
     # build a region mask object
