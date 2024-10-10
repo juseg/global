@@ -40,9 +40,9 @@ def regions_like(other):
     # region definitions (Greenland overlaps Europe and N.Am.)
     bounds = {
         'Asia': (60, 0, 180, 90),
-        'North America': (-180, 10, -30, 90),
+        'N. America': (-180, 10, -30, 90),
         'Europe': (-30, 30, 60, 90),
-        'South America': (-180, -60, -30, 10),
+        'S. America': (-180, -60, -30, 10),
         'Africa': (-30, -60, 60, 30),
         'Oceania': (60, -60, 180, 0),
         'Antarctica': (-180, -90, 180, -60),
@@ -69,9 +69,9 @@ def plot(source='cw5e5'):
     """Make plot and save figure for given source."""
 
     # initialize figure
-    fig, axes = plt.subplots(
-        figsize=(160/25.4, 80/25.4), ncols=2, gridspec_kw={
-            'left': 0.1, 'bottom': 0.15, 'right': 0.95, 'top': 0.9})
+    fig, ax = plt.subplots(figsize=(160/25.4, 80/25.4), gridspec_kw={
+        'left': 3.5/36, 'bottom': 2.5/18, 'right': 35.5/36, 'top': 17.5/18})
+    inset = fig.add_axes([21/36, 5.5/18, 12/36, 6/18])
 
     # open inception threshold and elevation model
     with glopdd_utils.open_inception_threshold(source=source) as git:
@@ -93,18 +93,32 @@ def plot(source='cw5e5'):
 
             # plot regions map
             sel.plot.imshow(
-                ax=axes[0], add_labels=False, add_colorbar=False,
+                ax=inset, add_labels=False, add_colorbar=False,
                 cmap=color_colormap(color, gamma=1/3))
 
             # plot cumulative area
             gia = cells.broadcast_like(sel).groupby(sel).sum()
             gia = gia.reindex(git=gia.git[::-1]).cumsum(dim='git') / 1e12
-            gia.plot(ax=axes[1], color=color, label=label)
+            gia.plot(ax=ax, color=color, label=label)
+
+            # add region label
+            ytext = 3 if label == 'Africa' else -3 if label == 'Oceania' else 0
+            ax.annotate(
+                label, color=color, fontsize=6, fontweight='bold',
+                xy=(gia[-1].git, gia[-1]), xytext=(-6, ytext),
+                textcoords='offset points', ha='right', va='center')
 
         # set axes properties
-        axes[1].legend(ncols=2)
-        axes[1].set_xlabel('temperature change (K)')
-        axes[1].set_ylabel(r'glacial inception area ($10^6\,km^2$)')
+        ax.set_xlabel('temperature change (K)')
+        ax.set_ylabel(r'glacial inception area ($10^6\,km^2$)')
+        ax.set_xlim(-24, 6)
+        ax.set_xlim(-24, 6)
+        inset.set_aspect('equal')
+        inset.set_ylim(-90, 90)
+        inset.xaxis.set_visible(False)
+        inset.yaxis.set_visible(False)
+        for spine in inset.spines.values():
+            spine.set_color(str(2/3))
 
     # return figure
     return fig
