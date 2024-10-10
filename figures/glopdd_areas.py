@@ -5,9 +5,28 @@
 
 """Plot global PDD glacial inception areas."""
 
+import time
+import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
 import glopdd_utils
+
+
+def cell_areas_ellipsoidal(lat, dlat, dlon=None, a=6378137, b=6356752.314245):
+    """Compute elemental surface area on ellipsoidal Earth."""
+    dlon = dlon or dlat
+    e = (1-(b/a)**2)**0.5
+    dist_meridian = a * (1-e**2) * (1-e**2*np.sin(np.pi*lat/180)**2)**(-3/2) * dlat
+    dist_parallel = a * np.cos(np.pi*lat/180) / (1-e**2*np.sin(np.pi*lat/180)**2)**(1/2) * dlon
+    return dist_meridian * dist_parallel
+
+
+def cell_areas_spherical(lat, dlat, dlon=None, radius=6371230):
+    """Compute elemental surface area on spherical Earth."""
+    dlon = dlon or dlat
+    dlat = dlat * np.pi / 180
+    dlon = dlon * np.pi / 180
+    return radius**2 * np.cos(np.pi*lat/180) * dlat * dlon
 
 
 def regions_like(other):
@@ -55,25 +74,27 @@ def plot(source='cw5e5'):
         # select partial data for testing
         git = git.isel(lat=slice(0, -1, 10), lon=slice(0, -1, 10))
 
+        # compute cell areas
+        cells = cell_areas_ellipsoidal(git.lat, git.lat[1] - git.lat[0])
+
         # loop on glaciated regions
         ax = axes[0]
         regions = regions_like(git)
         for label in regions.labels:
 
             # select regional data
-            mask = regions == label
-            sel = git.where(mask.compute(), drop=True)
+            print(time.strftime(f'[%H:%M:%S] computing areas in {label}...'))
+            sel = git.where(regions == label)
 
             # plot cumulative area
-            cells = sel.groupby(sel).count()
-            cells = cells.reindex(git=cells.git[::-1])
-            cells = cells.cumsum(dim='git')
-            cells.plot(ax=axes[0], label=label)
+            gia = cells.broadcast_like(sel).groupby(sel).sum()
+            gia = gia.reindex(git=gia.git[::-1]).cumsum(dim='git') / 1e12
+            gia.plot(ax=axes[0], label=label)
 
         # set axes properties
         ax.legend()
         ax.set_xlabel('temperature change (K)')
-        ax.set_ylabel('glacial inception grid cells')
+        ax.set_ylabel(r'glacial inception area ($10^6\,km^2$)')
 
     # return figure
     return fig
