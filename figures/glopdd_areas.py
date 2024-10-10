@@ -15,6 +15,8 @@ import glopdd_utils
 def cell_areas_ellipsoidal(lat, dlat, dlon=None, a=6378137, b=6356752.314245):
     """Compute elemental surface area on ellipsoidal Earth."""
     dlon = dlon or dlat
+    dlat = dlat * np.pi / 180
+    dlon = dlon * np.pi / 180
     e = (1-(b/a)**2)**0.5
     dist_meridian = a * (1-e**2) * (1-e**2*np.sin(np.pi*lat/180)**2)**(-3/2) * dlat
     dist_parallel = a * np.cos(np.pi*lat/180) / (1-e**2*np.sin(np.pi*lat/180)**2)**(1/2) * dlon
