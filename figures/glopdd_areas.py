@@ -49,7 +49,7 @@ def regions_like(other):
         'Greenland': (-75, 60, -15, 90)}
 
     # build a region mask object
-    regions = xr.zeros_like(other, dtype=str)
+    regions = xr.zeros_like(other, dtype=np.dtype('U10'))
     for name, (west, south, east, north) in bounds.items():
         lon_mask = (west <= regions.lon) & (regions.lon <= east)
         lat_mask = (south <= regions.lat) & (regions.lat <= north)
