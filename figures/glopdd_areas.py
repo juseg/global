@@ -6,6 +6,7 @@
 """Plot global PDD glacial inception areas."""
 
 import time
+import absplots as apl
 import numpy as np
 import xarray as xr
 import matplotlib as mpl
@@ -40,9 +41,9 @@ def regions_like(other):
     # region definitions (Greenland overlaps Europe and N.Am.)
     bounds = {
         'Asia': (60, 0, 180, 90),
-        'N. America': (-180, 10, -30, 90),
+        'N. Am.': (-180, 10, -30, 90),
         'Europe': (-30, 30, 60, 90),
-        'S. America': (-180, -60, -30, 10),
+        'S. Am.': (-180, -60, -30, 10),
         'Africa': (-30, -60, 60, 30),
         'Oceania': (60, -60, 180, 0),
         'Antarctica': (-180, -90, 180, -60),
@@ -69,9 +70,9 @@ def plot(source='cw5e5'):
     """Make plot and save figure for given source."""
 
     # initialize figure
-    fig, ax = plt.subplots(figsize=(160/25.4, 80/25.4), gridspec_kw={
-        'left': 3.5/36, 'bottom': 2.5/18, 'right': 35.5/36, 'top': 17.5/18})
-    inset = fig.add_axes([21/36, 5.5/18, 12/36, 6/18])
+    fig, ax = apl.subplots_mm(figsize=(85, 60), gridspec_kw={
+        'left': 12.5, 'right': 2.5, 'bottom': 10, 'top': 2.5})
+    inset = fig.add_axes_mm([50, 37.5, 30, 20])
 
     # open inception threshold and elevation model
     with glopdd_utils.open_inception_threshold(source=source) as git:
@@ -107,12 +108,13 @@ def plot(source='cw5e5'):
                 label, color=color, fontsize=6, fontweight='bold',
                 xy=(gia[-1].git, gia[-1]), xytext=(-6, ytext),
                 textcoords='offset points', ha='right', va='center')
+            break
 
         # set axes properties
         ax.set_xlabel('temperature change (K)')
         ax.set_ylabel(r'glacial inception area ($10^6\,km^2$)')
-        ax.set_xlim(-24, 6)
-        ax.set_xlim(-24, 6)
+        ax.set_xlim(-26, 6)
+        ax.set_ylim(-1, 26)
         inset.set_aspect('equal')
         inset.set_ylim(-90, 90)
         inset.xaxis.set_visible(False)
