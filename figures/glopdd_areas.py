@@ -14,6 +14,33 @@ import matplotlib.pyplot as plt
 import glopdd_utils
 
 
+def add_cut_axes_mm(ax, width=30, height=15, pad=2.5):
+    """Cut inset axes in top-right corner of main axes."""
+
+    # get main axes position
+    pos = ax.get_position(original=True)  # cf mpl api changes 3.0.0
+    ax.patch.set_ec('none')
+
+    # compute dims relative to main axes
+    fig = ax.figure
+    figw, figh = fig.get_size_inches()*25.4
+
+    # cut main axes (using transAxes)
+    axw = (width / pos.width + pad) / figw
+    axh = (height / pos.height + pad) / figh
+    x = [0, 1, 1, 1-axw, 1-axw, 0, 0]
+    y = [0, 0, 1-axh, 1-axh, 1, 1, 0]
+    kwargs = {'clip_on': False, 'transform': ax.transAxes, 'zorder': 3}
+    poly = plt.Polygon(list(zip(x, y)), ec='k', fc='none', **kwargs)
+    rect = plt.Rectangle((1-axw, 1-axh), axw, axh, ec='w', fc='w', **kwargs)
+    ax.add_patch(rect)
+    ax.add_patch(poly)
+
+    # return new cut axes
+    return fig.add_axes([
+        pos.x1-width/figw, pos.y1-height/figh, width/figw, height/figh])
+
+
 def cell_areas_ellipsoidal(lat, dlat, dlon=None, a=6378137, b=6356752.314245):
     """Compute elemental surface area on ellipsoidal Earth."""
     dlon = dlon or dlat
@@ -72,7 +99,7 @@ def plot(source='cw5e5'):
     # initialize figure
     fig, ax = apl.subplots_mm(figsize=(85, 60), gridspec_kw={
         'left': 12.5, 'right': 2.5, 'bottom': 10, 'top': 2.5})
-    inset = fig.add_axes_mm([50, 37.5, 30, 20])
+    inset = add_cut_axes_mm(ax)
 
     # open inception threshold and elevation model
     with glopdd_utils.open_inception_threshold(source=source) as git:
@@ -108,7 +135,6 @@ def plot(source='cw5e5'):
                 label, color=color, fontsize=6, fontweight='bold',
                 xy=(gia[-1].git, gia[-1]), xytext=(-6, ytext),
                 textcoords='offset points', ha='right', va='center')
-            break
 
         # set axes properties
         ax.set_xlabel('temperature change (K)')
@@ -119,8 +145,6 @@ def plot(source='cw5e5'):
         inset.set_ylim(-90, 90)
         inset.xaxis.set_visible(False)
         inset.yaxis.set_visible(False)
-        for spine in inset.spines.values():
-            spine.set_color(str(2/3))
 
     # return figure
     return fig
