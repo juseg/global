@@ -123,7 +123,7 @@ def plot(source='cw5e5'):
     # open inception threshold and elevation model
     with glopdd_utils.open_inception_threshold(source=source) as git:
 
-        # select partial data for testing
+        # select partial data for speed (no visual effect)
         git = git.isel(lat=slice(0, -1, 10), lon=slice(0, -1, 10))
         git = git.compute()
 
