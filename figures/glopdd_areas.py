@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright (c) 2024, Julien Seguinot (juseg.dev)
+# Copyright (c) 2024-2025, Julien Seguinot (juseg.dev)
 # Creative Commons Attribution-ShareAlike 4.0 International License
 # (CC BY-SA 4.0, http://creativecommons.org/licenses/by-sa/4.0/)
 
@@ -12,6 +12,7 @@ import xarray as xr
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import glopdd_utils
+import hyoga
 
 
 def add_cut_axes_mm(ax, width=30, height=15, pad=2.5):
@@ -60,6 +61,24 @@ def color_colormap(color, gamma=1):
     """Create a colormap from white to given colour."""
     return mpl.colors.LinearSegmentedColormap.from_list(
         color, [(0, 'w'), (1, color)], gamma=gamma)
+
+
+def open_regions():
+    """Open custom regions geodataframe."""
+    countries = hyoga.open.natural_earth(
+        'admin_0_countries', category='cultural', scale='50m')
+    countries = countries.set_index('NAME')
+    countries.loc['Russia', 'CONTINENT'] = 'Asia'
+    countries.loc['Greenland', 'CONTINENT'] = 'Greenland'
+    regions = countries.dissolve(by='CONTINENT')
+    regions = regions.rename(index={
+        'North America': 'N. Am.', 'South America': 'S. Am.'})
+    regions.loc['Antarctica*'] = regions.loc[[
+        'Antarctica', 'Seven seas (open ocean)']].union_all()
+    regions = regions.reindex(index=[
+        'Asia', 'N. Am.', 'Europe', 'S. Am.', 'Africa', 'Oceania',
+        'Antarctica*', 'Greenland'])
+    return regions
 
 
 def regions_like(other):
