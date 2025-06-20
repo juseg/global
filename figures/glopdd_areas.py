@@ -125,18 +125,23 @@ def plot(source='cw5e5'):
 
         # select partial data for testing
         git = git.isel(lat=slice(0, -1, 10), lon=slice(0, -1, 10))
+        git = git.compute()
+
+        # FIXME assign spatial dims in preprocessing
+        git = git.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
 
         # compute cell areas
         cells = cell_areas_ellipsoidal(git.lat, git.lat[1] - git.lat[0])
 
-        # loop on glaciated regions
-        regions = regions_like(git)
+        # loop on continents
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-        for color, label in zip(colors, regions.labels):
+        regions = open_regions()
+        for color, label in zip(colors, regions.index):
 
             # select regional data
             print(time.strftime(f'[%H:%M:%S] - computing areas in {label}...'))
-            sel = git.where(regions == label)
+            geometry = regions.loc[[label]].geometry
+            sel = git.rio.clip(geometry, all_touched=True, drop=False)
 
             # plot regions map
             sel.plot.imshow(
