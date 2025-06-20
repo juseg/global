@@ -154,10 +154,11 @@ def plot(source='cw5e5'):
             gia.plot(ax=ax, color=color, label=label)
 
             # add region label
-            ytext = 3 if label == 'Africa' else -3 if label == 'Oceania' else 0
+            ytext = {'Africa': 2, 'Greenland': 5, 'Oceania': -2}.get(label, 0)
+            xtext = {'Greenland': 15}.get(label, -5)
             ax.annotate(
                 label, color=color, fontsize=6, fontweight='bold',
-                xy=(gia[-1].git, gia[-1]), xytext=(-6, ytext),
+                xy=(gia[-1].git, gia[-1]), xytext=(xtext, ytext),
                 textcoords='offset points', ha='right', va='center')
 
         # set axes properties
@@ -165,6 +166,7 @@ def plot(source='cw5e5'):
         ax.set_ylabel(r'glacial inception area ($10^6\,km^2$)')
         ax.set_xlim(-26, 6)
         ax.set_ylim(-1, 26)
+        ax.set_title('')
         inset.set_aspect('equal')
         inset.set_ylim(-90, 90)
         inset.xaxis.set_visible(False)
