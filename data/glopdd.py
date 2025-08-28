@@ -299,6 +299,36 @@ def compute_glacial_threshold(smb):
     return git
 
 
+# Save data arrays
+# ----------------
+
+def write_compressed_formats(da, filepath, **kwargs):
+    """Save dataarray as compressed geotiff and netcdf4."""
+    da = da.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
+    write_compressed_netcdf4(da, filepath+'.nc', **kwargs)
+    write_compressed_geotiff(da, filepath+'.tif', **kwargs)
+
+
+def write_compressed_geotiff(da, filepath, overwrite=False):
+    """Save dataarray as compressed geotiff."""
+    if overwrite or not os.path.isfile(filepath):
+        print(f"Assembling {filepath} ...")
+        da.rio.to_raster(filepath, compress='LZW', tiled=True)
+
+
+def write_compressed_netcdf4(da, filepath, overwrite=False):
+    """Save dataarray as compressed netcdf4."""
+    if overwrite or not os.path.isfile(filepath):
+        print(f"Assembling {filepath} ...")
+        da.to_netcdf(filepath)
+        print(f"Compressing {filepath} ...")
+        dirname, basename = os.path.split(filepath)
+        with tempfile.NamedTemporaryFile(
+                dir=dirname, prefix=basename+'.') as tmp:
+            subprocess.run(['nccopy', '-sd6', filepath, tmp.name])
+            os.replace(tmp.name, filepath)
+
+
 # Main program
 # ------------
 
