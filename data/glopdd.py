@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright (c) 2023-2024, Julien Seguinot (juseg.dev)
+# Copyright (c) 2023-2025, Julien Seguinot (juseg.dev)
 # Creative Commons Attribution-ShareAlike 4.0 International License
 # (CC BY-SA 4.0, http://creativecommons.org/licenses/by-sa/4.0/)
 
@@ -249,7 +249,7 @@ def compute_mass_balance(
     stdv = compute_interp_climate(stdv.chunk(lat=100, lon=100), interp=interp)
 
     # apply temperature offset
-    offset = np.linspace(-5, 20, 126)
+    offset = np.linspace(0, 20, 201)
     offset = xr.DataArray(offset, coords=[offset], dims=['offset'])
     temp = temp - offset
 
