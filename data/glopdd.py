@@ -307,7 +307,6 @@ def compute_glacial_threshold(smb):
 
 def write_compressed_formats(da, filepath, **kwargs):
     """Save dataarray as compressed geotiff and netcdf4."""
-    da = da.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
     write_compressed_netcdf4(da, filepath+'.nc', **kwargs)
     write_compressed_geotiff(da, filepath+'.tif', **kwargs)
 
@@ -418,8 +417,11 @@ def main():
 
         # reopen all tiles and write single-file global dataset
         with xr.open_mfdataset(paths) as ds:
+            git = ds.git.sortby(ds.lat, ascending=True)
+            git = git.rio.write_crs('+proj=lonlat')
+            git = git.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
             write_compressed_formats(
-                ds.git, f'processed/{prefix}', overwrite=args.overwrite)
+                git, f'processed/{prefix}', overwrite=args.overwrite)
 
 
 if __name__ == '__main__':
