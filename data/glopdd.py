@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright (c) 2023-2024, Julien Seguinot (juseg.dev)
+# Copyright (c) 2023-2025, Julien Seguinot (juseg.dev)
 # Creative Commons Attribution-ShareAlike 4.0 International License
 # (CC BY-SA 4.0, http://creativecommons.org/licenses/by-sa/4.0/)
 
@@ -7,7 +7,6 @@
 
 import argparse
 import os.path
-import tempfile
 import subprocess
 import warnings
 import cdsapi
@@ -140,6 +139,10 @@ def download_era5_monthly(year, var='t2m'):
 
 def open_climate_tile(tile, freq='day', source='cw5e5'):
     """Open temp, prec, stdv climatology for a 30x30 degree tile."""
+    # FIXME the unit conversion code in this function is now implemented in
+    # hyoga but it is not very exposed, to correct that I see two options
+    # - allow atmosphere() to load data without reprojection
+    # - move unit conversion to _open_climatology() and call that
 
     # open climatology from hyoga cache directory
     prefix = os.path.join('~', '.cache', 'hyoga', source, 'clim', source)
@@ -249,7 +252,7 @@ def compute_mass_balance(
     stdv = compute_interp_climate(stdv.chunk(lat=100, lon=100), interp=interp)
 
     # apply temperature offset
-    offset = np.linspace(-5, 20, 126)
+    offset = np.linspace(0, 20, 201)
     offset = xr.DataArray(offset, coords=[offset], dims=['offset'])
     temp = temp - offset
 
@@ -297,6 +300,33 @@ def compute_glacial_threshold(smb):
 
     # return glacial inception threshold
     return git
+
+
+# Save data arrays
+# ----------------
+
+def write_compressed_formats(da, filepath, **kwargs):
+    """Save dataarray as compressed geotiff and netcdf4."""
+    write_compressed_netcdf4(da, filepath+'.nc', **kwargs)
+    write_compressed_geotiff(da, filepath+'.tif', **kwargs)
+
+
+def write_compressed_geotiff(da, filepath, overwrite=False):
+    """Save dataarray as compressed geotiff."""
+    if overwrite or not os.path.isfile(filepath):
+        print(f"Assembling {filepath} ...")
+        da.rio.to_raster(filepath, compress='LZW', tiled=True)
+
+
+def write_compressed_netcdf4(da, filepath, overwrite=False):
+    """Save dataarray as compressed netcdf4."""
+    if overwrite or not os.path.isfile(filepath):
+        print(f"Assembling {filepath} ...")
+        da.to_netcdf(filepath)
+        print(f"Compressing {filepath} ...")
+        subprocess.run(
+            ['nccopy', '-sd6', filepath, filepath+'.sd6'], check=True)
+        os.replace(filepath+'.sd6', filepath)
 
 
 # Main program
@@ -385,30 +415,13 @@ def main():
                 for da in temp, prec, stdv:
                     da.close()
 
-        # reopen all tiles as global dataset
+        # reopen all tiles and write single-file global dataset
         with xr.open_mfdataset(paths) as ds:
-
-            # save compressed geotiff
-            filepath = f'processed/{prefix}.tif'
-            if args.overwrite or not os.path.isfile(filepath):
-                print(f"Assembling {filepath} ...")
-                git = ds.git.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
-                git.rio.to_raster(filepath, compress='LZW', tiled=True)
-
-            # save uncompressed netcdf
-            filepath = f'processed/{prefix}.nc'
-            if args.overwrite or not os.path.isfile(filepath):
-                print(f"Assembling {filepath} ...")
-                ds.to_netcdf(filepath)
-
-                # nccopy compression beats xarray by far
-                print(f"Compressing {filepath} ...")
-                dirname, basename = os.path.split(filepath)
-                with tempfile.NamedTemporaryFile(
-                        dir=dirname, prefix=basename+'.') as tmp:
-                    subprocess.run(
-                        ['nccopy', '-sd6', filepath, tmp.name])
-                    os.replace(tmp.name, filepath)
+            git = ds.git.sortby(ds.lat, ascending=True)
+            git = git.rio.write_crs('+proj=lonlat')
+            git = git.rio.set_spatial_dims(x_dim='lon', y_dim='lat')
+            write_compressed_formats(
+                git, f'processed/{prefix}', overwrite=args.overwrite)
 
 
 if __name__ == '__main__':
