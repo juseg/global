@@ -126,8 +126,7 @@ def open_inception_threshold(source='cw5e5', precip='cp', ddf=3):
         return (
             open_inception_threshold(source='cera5', precip=precip, ddf=ddf) -
             open_inception_threshold(source='cw5e5', precip=precip, ddf=ddf))
-    da = xr.open_dataarray(
+    da = xr.open_dataset(
         f'../data/processed/glopdd.git.{source}.{precip}.ddf{ddf}.nc',
-        chunks={})
-    da = da.sortby(da.lat, ascending=True)
+        chunks={}).git
     return da
