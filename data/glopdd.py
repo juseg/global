@@ -7,7 +7,6 @@
 
 import argparse
 import os.path
-import tempfile
 import subprocess
 import warnings
 import cdsapi
@@ -326,11 +325,9 @@ def write_compressed_netcdf4(da, filepath, overwrite=False):
         print(f"Assembling {filepath} ...")
         da.to_netcdf(filepath)
         print(f"Compressing {filepath} ...")
-        dirname, basename = os.path.split(filepath)
-        with tempfile.NamedTemporaryFile(
-                dir=dirname, prefix=basename+'.') as tmp:
-            subprocess.run(['nccopy', '-sd6', filepath, tmp.name])
-            os.replace(tmp.name, filepath)
+        subprocess.run(
+            ['nccopy', '-sd6', filepath, filepath+'.sd6'], check=True)
+        os.replace(filepath+'.sd6', filepath)
 
 
 # Main program
