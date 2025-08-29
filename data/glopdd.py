@@ -140,6 +140,10 @@ def download_era5_monthly(year, var='t2m'):
 
 def open_climate_tile(tile, freq='day', source='cw5e5'):
     """Open temp, prec, stdv climatology for a 30x30 degree tile."""
+    # FIXME the unit conversion code in this function is now implemented in
+    # hyoga but it is not very exposed, to correct that I see two options
+    # - allow atmosphere() to load data without reprojection
+    # - move unit conversion to _open_climatology() and call that
 
     # open climatology from hyoga cache directory
     prefix = os.path.join('~', '.cache', 'hyoga', source, 'clim', source)
